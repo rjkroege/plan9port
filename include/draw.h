@@ -22,6 +22,8 @@ typedef struct	Rectangle Rectangle;
 typedef struct	RGB RGB;
 typedef struct	Screen Screen;
 typedef struct	Subfont Subfont;
+typedef struct	Style Style;
+typedef char	STag;
 
 struct Mux;
 
@@ -334,6 +336,24 @@ struct Font
 	Font	*hidpi;
 };
 
+/*
+ * Styled text drawing is via a per-rune style selector. Each style selector
+ * (16 possible) selects an entry from an array of Styles.
+ */
+struct Style
+{
+	Font 		*font;	/* the font for this style. */
+	Image* 	bg;		/* the background color */
+	Point		bgp;		/* the background color point */
+	Image* 	src;		/* the foreground color */
+	Point		sp;		/* the foreground color point */
+};
+
+enum{
+	DEFAULTSTYLE = 0,
+	NSTYLE = 255,
+};
+
 #define	Dx(r)	((r).max.x-(r).min.x)
 #define	Dy(r)	((r).max.y-(r).min.y)
 
@@ -468,6 +488,29 @@ extern void	fillarc(Image*, Point, int, int, Image*, Point, int, int);
 extern void	fillarcop(Image*, Point, int, int, Image*, Point, int, int, Drawop);
 extern void	border(Image*, Rectangle, int, Image*, Point);
 extern void	borderop(Image*, Rectangle, int, Image*, Point, Drawop);
+
+/*
+ * Styled Strings. Work only with Runes.
+ */
+extern void 	setstagsforrunerange(STag*, STag, int);
+// FIXME: pending removal.
+extern void 	styledstringverticalmetrics(char*, Rune*, int, STag*, Style*, int*, int*);
+extern Point 	_sstring(Image *dst, Point pt, Rune *r, int len, Rectangle clipr, Drawop op, STag *styletags, Style *styledefns, int ascent);
+
+extern Point 	srunestringn(Image *dst, Point pt, Rune *r, int len, STag *styletags, Style *styledefns, int ascent);
+extern Point 	srunestring(Image *dst, Point pt, Rune *r, STag *styletags, Style *styledefns, int ascent);
+
+// FIXME: worry about the use of bg for doing highlighting...
+extern Point 	srunestringn(Image *dst, Point pt, Rune *r, int len, STag *styletags, Style *styledefns, int ascent);
+extern Point 	srunestring(Image *dst, Point pt, Rune *r, STag *styletags, Style *styledefns, int ascent);
+
+// FIXME: implement measurement functions.
+// A high quality refactor is possible.
+
+extern Point	srunestringsize(Rune*, STag*, Style*, int*);
+extern int		srunestringwidth(Rune*, STag*, Style*);
+extern int		srunestringnwidth(Rune*, int, STag*, Style*);
+extern Point	_srunestringnwidth(Rune*, int, STag*, Style*, int*);
 
 /*
  * Font management

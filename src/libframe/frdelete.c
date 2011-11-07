@@ -14,19 +14,42 @@ frdelete(Frame *f, ulong p0, ulong p1)
 	Rectangle r;
 	int nn0;
 	Image *col;
+	int h0, h1, ph0, ph1;
+
+	/*
+	 * Height handling
+	 * h0: height of line containing pt0 before deletion
+	 * h1: height of line contianing pt1 before deletion.
+          */
 
 	if(p0>=f->nchars || p0==p1 || f->b==nil)
 		return 0;
 	if(p1 > f->nchars)
 		p1 = f->nchars;
+
+	// FIXME: refactor to get heights througthout.
+	// Before splitting, we get the original heights..
+	// Am unclear if this handles all of the cases: deleting character at beginning of line., etc.
+	_frsptofcharh(f, p0, &h0);
+	_frsptofcharh(f, p1, &h1);
+
 	n0 = _frfindbox(f, 0, 0, p0);
 	if(n0 == f->nbox)
 		drawerror(f->display, "off end in frdelete");
 	n1 = _frfindbox(f, n0, p0, p1);
+
 	pt0 = _frptofcharnb(f, p0, n0);
 	pt1 = frptofchar(f, p1);
-	if(f->p0 == f->p1)
-		frtick(f, frptofchar(f, f->p0), 0);
+
+	if(f->p0 == f->p1) {
+		// FIXME: refactor. We could avoid doing some of this.
+		// FIXME: in particular, there ought to be no reason to compute the point again.
+		int b = 0; 
+		Point pt = _frsptofchar(f, f->p0, &b);
+		print("box from _frsptofchar %d\n", b);
+		// frstick(f, pt, 0, (b >= 0) ? f->box[b].height : 0);
+		frstick(f, pt, 0, h0);
+	}
 	nn0 = n0;
 	ppt0 = pt0;
 	_frfreebox(f, n0, n1-1);
@@ -43,14 +66,15 @@ frdelete(Frame *f, ulong p0, ulong p1)
 	b = &f->box[n1];
 	cn1 = p1;
 	while(pt1.x!=pt0.x && n1<f->nbox){
-		_frcklinewrap0(f, &pt0, b);
+		print("frdelete: while loop\n");
+		_frcklinewrap0(f, &pt0, b, b->height); // FIXME: suspect height
 		_frcklinewrap(f, &pt1, b);
 		n = _frcanfit(f, pt0, b);
 		if(n==0)
 			drawerror(f->display, "_frcanfit==0");
 		r.min = pt0;
 		r.max = pt0;
-		r.max.y += f->font->height;
+		r.max.y += b->height;
 		if(b->nrune > 0){
 			w0 = b->wid;
 			if(n != b->nrune){
@@ -83,11 +107,14 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		b++;
 	}
 	if(n1==f->nbox && pt0.x!=pt1.x)	/* deleting last thing in window; must clean up */
-		frselectpaint(f, pt0, pt1, f->cols[BACK]);
+		frsselectpaint(f, pt0, pt1, f->cols[BACK], h0, h1);
 	if(pt1.y != pt0.y){
 		Point pt2;
+		int tmpbn = n1;
 
-		pt2 = _frptofcharptb(f, 32767, pt1, n1);
+		print("frdeleete: the if A\n");		
+		// FIXME: this might need to be fixed.
+		pt2 = _frptofcharptb(f, 32767, pt1, &tmpbn);
 		if(pt2.y > f->r.max.y)
 			drawerror(f->display, "frptofchar in frdelete");
 		if(n1 < f->nbox){
@@ -121,8 +148,12 @@ frdelete(Frame *f, ulong p0, ulong p1)
 	else if(f->p0 > p0)
 		f->p0 = p0;
 	f->nchars -= p1-p0;
-	if(f->p0 == f->p1)
-		frtick(f, frptofchar(f, f->p0), 1);
+	if(f->p0 == f->p1) {
+		// here, we re-measure because we've cleaned above.
+		int b = 0; 
+		Point pt = _frsptofchar(f, f->p0, &b);
+		frstick(f, pt, 1, (b >= 0) ? f->box[b].height : 0);
+	}
 	pt0 = frptofchar(f, f->nchars);
 	n = f->nlines;
 	f->nlines = (pt0.y-f->r.min.y)/f->font->height+(pt0.x>f->r.min.x);

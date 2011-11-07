@@ -5,24 +5,25 @@
 #include <frame.h>
 
 Point
-_frptofcharptb(Frame *f, ulong p, Point pt, int bn)
+_frptofcharptb(Frame *f, ulong p, Point pt, int* boxnum)
 {
-	uchar *s;
+	Rune *s;
 	Frbox *b;
-	int w, l;
-	Rune r;
+	int l, bn;
+	STag* t;
+	
+	bn = *boxnum;
 
 	for(b = &f->box[bn]; bn<f->nbox; bn++,b++){
 		_frcklinewrap(f, &pt, b);
 		if(p < (l=NRUNE(b))){
 			if(b->nrune > 0)
-				for(s=b->ptr; p>0; s+=w, p--){
-					if((r = *s) < Runeself)
-						w = 1;
-					else
-						w = chartorune(&r, (char*)s);
-					pt.x += stringnwidth(f->font, (char*)s, 1);
-					if(r==0 || pt.x>f->r.max.x)
+				// FIXME: could simplify?
+				// FIXME: is this right? It would seem we're not advancing
+				// the style string...
+				for(s=b->ptr, t = b->ptags; p>0; s++, p--, t++){
+					pt.x += srunestringnwidth(s, 1, t, f->styles);
+					if(pt.x>f->r.max.x)
 						drawerror(f->display, "frptofchar");
 				}
 			break;
@@ -30,13 +31,31 @@ _frptofcharptb(Frame *f, ulong p, Point pt, int bn)
 		p -= l;
 		_fradvance(f, &pt, b);
 	}
+	*boxnum = (bn < f->nbox) ? bn : bn - 1;
 	return pt;
 }
 
 Point
 frptofchar(Frame *f, ulong p)
 {
-	return _frptofcharptb(f, p, f->r.min, 0);
+	int n = 0;
+	return _frptofcharptb(f, p, f->r.min, &n);
+}
+
+Point
+_frsptofchar(Frame *f, ulong p, int* box)
+{
+	return _frptofcharptb(f, p, f->r.min, box);
+}
+
+// FIXME: Handle the situation of interest with out the _fradvance
+Frtxtorigin
+_frsptofcharh(Frame *f, ulong p)
+{
+	int b = 0;
+	Point pt = _frptofcharptb(f, p, f->r.min, &b);
+	*height = 	(b >= 0) ? f->box[b].height : 0;
+	return pt;
 }
 
 Point
@@ -44,10 +63,11 @@ _frptofcharnb(Frame *f, ulong p, int nb)	/* doesn't do final _fradvance to next 
 {
 	Point pt;
 	int nbox;
+	int boxn = 0;
 
 	nbox = f->nbox;
 	f->nbox = nb;
-	pt = _frptofcharptb(f, p, f->r.min, 0);
+	pt = _frptofcharptb(f, p, f->r.min, &boxn);
 	f->nbox = nbox;
 	return pt;
 }
@@ -68,8 +88,8 @@ ulong
 frcharofpt(Frame *f, Point pt)
 {
 	Point qt;
-	int w, bn;
-	uchar *s;
+	int bn;
+	Rune *s;
 	Frbox *b;
 	ulong p;
 	Rune r;
@@ -93,14 +113,10 @@ frcharofpt(Frame *f, Point pt)
 			else{
 				s = b->ptr;
 				for(;;){
-					if((r = *s) < Runeself)
-						w = 1;
-					else
-						w = chartorune(&r, (char*)s);
 					if(r == 0)
 						drawerror(f->display, "end of string in frcharofpt");
-					qt.x += stringnwidth(f->font, (char*)s, 1);
-					s += w;
+					qt.x += srunestringnwidth(s, 1, b->ptags, f->styles);
+					s++;
 					if(qt.x > pt.x)
 						break;
 					p++;

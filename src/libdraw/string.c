@@ -37,10 +37,23 @@ runestring(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r)
 	return _string(dst, pt, src, sp, f, nil, r, 1<<24, dst->clipr, nil, ZP, SoverD);
 }
 
+// Styled
+Point
+srunestring(Image *dst, Point pt, Rune *r, STag *styletags, Style *styledefns, int ascent)
+{
+	return _sstring(dst, pt, r, 1<<24, dst->clipr, SoverD, styletags, styledefns, ascent);
+}
+
 Point
 runestringop(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r, Drawop op)
 {
 	return _string(dst, pt, src, sp, f, nil, r, 1<<24, dst->clipr, nil, ZP, op);
+}
+
+Point
+srunestringn(Image *dst, Point pt, Rune *r, int len, STag *styletags, Style *styledefns, int ascent)
+{
+	return _sstring(dst, pt, r, len, dst->clipr, SoverD, styletags, styledefns, ascent);
 }
 
 Point
@@ -53,6 +66,33 @@ Point
 runestringnop(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r, int len, Drawop op)
 {
 	return _string(dst, pt, src, sp, f, nil, r, len, dst->clipr, nil, ZP, op);
+}
+
+// Styled. On runes only.
+// FIXME: may need to do something clever about painting the backgrounds.
+// FIXME: might have to do something about heights.
+Point
+_sstring(Image *dst, Point pt, Rune *r, int len, Rectangle clipr, Drawop op, STag *t, Style *styledefns, int ascent)
+{
+	Style *style;
+	Point p;
+	int i, o;
+	STag def = 0;
+	
+	if (ascent == 0) {
+		_srunestringnwidth(r, len, t, styledefns, &ascent);
+	}
+
+	o = (t) ? 1 : 0;
+	t = (t) ? t : &def;
+
+	for (i = 0; r[i] && i < len; i++, t += o) {
+		style = styledefns + *t;
+		p = _string(dst, Pt(pt.x, pt.y + ascent - style->font->ascent), style->src, style->sp,
+				style->font, 0, r + i, 1, clipr, style->bg, style->bgp, op);
+		pt.x = p.x;
+	}
+	return pt;
 }
 
 Point

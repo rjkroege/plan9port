@@ -52,6 +52,7 @@ OFILES=\
 	stringbg.$O\
 	stringsubfont.$O\
 	stringwidth.$O\
+	styles.$O\
 	subfont.$O\
 	subfontcache.$O\
 	subfontname.$O\

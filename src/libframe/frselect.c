@@ -102,28 +102,42 @@ frselect(Frame *f, Mousectl *mc)	/* when called, button 1 is down */
 	}while(mc->m.buttons == b);
 }
 
+
 void
 frselectpaint(Frame *f, Point p0, Point p1, Image *col)
 {
-	int n;
+	frsselectpaint(f, p0, p1, col, f->font->height, f->font->height);
+}
+
+
+/*
+	This needs to be modified. It clears the deleted content.
+	In the current usage, it draws a box that's too short. This is easily fixed. But really, we ought
+	to be more clever?
+
+	recode in terms of h0, h1.
+*/
+void
+frsselectpaint(Frame *f, Point p0, Point p1, Image *col, int h0, int h1)
+{
 	Point q0, q1;
 
 	q0 = p0;
 	q1 = p1;
-	q0.y += f->font->height;
-	q1.y += f->font->height;
-	n = (p1.y-p0.y)/f->font->height;
+	q0.y += h0;
+	q1.y += h1;
+
 	if(f->b == nil)
-		drawerror(f->display, "frselectpaint b==0");
+		drawerror(f->display, "frsselectpaint b==0");
 	if(p0.y == f->r.max.y)
 		return;
-	if(n == 0)
+	if (p1.y - p0.y < h0)
 		draw(f->b, Rpt(p0, q1), col, nil, ZP);
 	else{
 		if(p0.x >= f->r.max.x)
 			p0.x = f->r.max.x-1;
 		draw(f->b, Rect(p0.x, p0.y, f->r.max.x, q0.y), col, nil, ZP);
-		if(n > 1)
+		if(p1.y - p0.y > h0)
 			draw(f->b, Rect(f->r.min.x, q0.y, f->r.max.x, p1.y),
 				col, nil, ZP);
 		draw(f->b, Rect(f->r.min.x, p1.y, q1.x, q1.y),

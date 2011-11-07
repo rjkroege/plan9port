@@ -4,25 +4,23 @@
 #include <mouse.h>
 #include <frame.h>
 
+// FIXME: need to pass back the height...
+// Propsoal: we need to 
+
+
 int
 _frcanfit(Frame *f, Point pt, Frbox *b)
 {
-	int left, w, nr;
-	uchar *p;
-	Rune r;
+	int left, nr;
+	Rune *p;
 
 	left = f->r.max.x-pt.x;
 	if(b->nrune < 0)
 		return b->minwid <= left;
 	if(left >= b->wid)
 		return b->nrune;
-	for(nr=0,p=b->ptr; *p; p+=w,nr++){
-		r = *p;
-		if(r < Runeself)
-			w = 1;
-		else
-			w = chartorune(&r, (char*)p);
-		left -= stringnwidth(f->font, (char*)p, 1);
+	for(nr=0, p=b->ptr; *p; p++,nr++){
+		left  -= _srunestringnwidth(p, 1, b->ptags, f->styles, 0).x;
 		if(left < 0)
 			return nr;
 	}
@@ -35,16 +33,20 @@ _frcklinewrap(Frame *f, Point *p, Frbox *b)
 {
 	if((b->nrune<0? b->minwid : b->wid) > f->r.max.x-p->x){
 		p->x = f->r.min.x;
-		p->y += f->font->height;
+		p->y += b->height;
 	}
 }
 
 void
-_frcklinewrap0(Frame *f, Point *p, Frbox *b)
+_frcklinewrap0(Frame *f, Point *p, Frbox *b, int h)
 {
+	print("_frcklinewrap0: <%0.*S>, h %d\n", b->nrune, b->ptr, h);
 	if(_frcanfit(f, *p, b) == 0){
 		p->x = f->r.min.x;
-		p->y += f->font->height;
+		// Must advance by the height of the line that the box doesn't fit on.
+		// This might be flawed if the inserted box in bxscan needs multiple
+		// lines?
+		p->y += h;
 	}
 }
 
@@ -53,7 +55,7 @@ _fradvance(Frame *f, Point *p, Frbox *b)
 {
 	if(b->nrune<0 && b->bc=='\n'){
 		p->x = f->r.min.x;
-		p->y += f->font->height;
+		p->y += b->height;
 	}else
 		p->x += b->wid;
 }

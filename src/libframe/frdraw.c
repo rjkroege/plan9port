@@ -13,21 +13,9 @@ _frdrawtext(Frame *f, Point pt, Image *text, Image *back)
 	for(nb=0,b=f->box; nb<f->nbox; nb++, b++){
 		_frcklinewrap(f, &pt, b);
 		if(!f->noredraw && b->nrune >= 0)
-			stringbg(f->b, pt, text, ZP, f->font, (char*)b->ptr, back, ZP);
+			srunestringn(f->b, pt, b->ptr, b->nrune, b->ptags, f->styles, b->ascent);
 		pt.x += b->wid;
 	}
-}
-
-static int
-nbytes(char *s0, int nr)
-{
-	char *s;
-	Rune r;
-
-	s = s0;
-	while(--nr >= 0)
-		s += chartorune(&r, s);
-	return s-s0;
 }
 
 void
@@ -54,6 +42,7 @@ frdrawsel(Frame *f, Point pt, ulong p0, ulong p1, int issel)
 	frdrawsel0(f, pt, p0, p1, back, text);
 }
 
+// FIXME: adjust for height.
 Point
 frdrawsel0(Frame *f, Point pt, ulong p0, ulong p1, Image *back, Image *text)
 {
@@ -82,9 +71,9 @@ frdrawsel0(Frame *f, Point pt, ulong p0, ulong p1, Image *back, Image *text)
 			if(pt.y > qt.y)
 				draw(f->b, Rect(qt.x, qt.y, f->r.max.x, pt.y), back, nil, qt);
 		}
-		ptr = (char*)b->ptr;
+		ptr = b->ptr;
 		if(p < p0){	/* beginning of region: advance into box */
-			ptr += nbytes(ptr, p0-p);
+			ptr += p0-p;
 			nr -= (p0-p);
 			p = p0;
 		}
@@ -96,13 +85,13 @@ frdrawsel0(Frame *f, Point pt, ulong p0, ulong p1, Image *back, Image *text)
 		if(b->nrune<0 || nr==b->nrune)
 			w = b->wid;
 		else
-			w = stringnwidth(f->font, ptr, nr);
+			w = _srunestringnwidth(ptr, nr, b->ptags, f->styles, 0).x;
 		x = pt.x+w;
 		if(x > f->r.max.x)
 			x = f->r.max.x;
 		draw(f->b, Rect(pt.x, pt.y, x, pt.y+f->font->height), back, nil, pt);
 		if(b->nrune >= 0)
-			stringnbg(f->b, pt, text, ZP, f->font, ptr, nr, back, ZP);
+			srunestringn(f->b, pt, ptr, nr, b->ptags, f->styles, 0);
 		pt.x += w;
 	    Continue:
 		b++;
@@ -128,12 +117,16 @@ frredraw(Frame *f)
 		ticked = f->ticked;
 		if(ticked)
 			frtick(f, frptofchar(f, f->p0), 0);
+		// FIXME: adjust for styles.
 		frdrawsel0(f, frptofchar(f, 0), 0, f->nchars, f->cols[BACK], f->cols[TEXT]);
 		if(ticked)
 			frtick(f, frptofchar(f, f->p0), 1);
 		return;
 	}
 
+	// FIXME: see... need to set the background and not take it out of the style.
+	// Cause we use the background for drawing the selection highlight.
+	// FIXME: should let the draw call override the background from the style.
 	pt = frptofchar(f, 0);
 	pt = frdrawsel0(f, pt, 0, f->p0, f->cols[BACK], f->cols[TEXT]);
 	pt = frdrawsel0(f, pt, f->p0, f->p1, f->cols[HIGH], f->cols[HTEXT]);
@@ -143,17 +136,28 @@ frredraw(Frame *f)
 static void
 _frtick(Frame *f, Point pt, int ticked)
 {
+	frstick(f, pt, ticked, f->font->height);
+}
+
+void
+frstick(Frame *f, Point pt, int ticked, int h) {
 	Rectangle r;
 
+	print("frstick: (%d, %d), height %d, show %d\n", pt.x, pt.y, h, ticked); 
+	
 	if(f->ticked==ticked || f->tick==0 || !ptinrect(pt, f->r))
 		return;
+	print("frstick: proceeding\n");
 	pt.x -= f->tickscale;	/* looks best just left of where requested */
-	r = Rect(pt.x, pt.y, pt.x+FRTICKW*f->tickscale, pt.y+f->font->height);
+	r = Rect(pt.x, pt.y, pt.x+FRTICKW*f->tickscale, pt.y + h);
 	/* can go into left border but not right */
 	if(r.max.x > f->r.max.x)
 		r.max.x = f->r.max.x;
 	if(ticked){
+		/*	My assumption is that the tick is hidden before we move things.
+			You will be sad if you violate this assumption. Really. */
 		draw(f->tickback, f->tickback->r, f->b, nil, pt);
+		_frresizetick(f, h);
 		draw(f->b, r, f->tick, nil, ZP);
 	}else
 		draw(f->b, r, f->tickback, nil, ZP);
@@ -178,7 +182,7 @@ _frdraw(Frame *f, Point pt)
 	int nb, n;
 
 	for(b=f->box,nb=0; nb<f->nbox; nb++, b++){
-		_frcklinewrap0(f, &pt, b);
+		_frcklinewrap0(f, &pt, b, b->height);
 		if(pt.y == f->r.max.y){
 			f->nchars -= _frstrlen(f, nb);
 			_frdelbox(f, nb, f->nbox-1);

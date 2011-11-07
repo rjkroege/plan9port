@@ -8,14 +8,39 @@
 #define	TMPSIZE	256
 static Frame		frame;
 
+/*
+	To provide compatability with the older un-styled code
+	in place, it would be convenient if we did not have to
+	provide style tags. I need a general mechanism for
+	this.
+
+	style[DEFAULTSTYLE] will always have a font. So, if the STag*
+	is 0, assume that all STag values are 0 and hence pick the default
+	style.
+
+	FIXME: document that DEFAULTSTYLE must always exist.
+	FIXME: consider re-writing some of the other drawing code to work this way to force rightness.
+*/
+
 static
 Point
-bxscan(Frame *f, Rune *sp, Rune *ep, Point *ppt)
+bxscan(Frame *f, Rune *sp, Rune *ep, Frtxtorigin *ppt, STag* sstp, int h0)
 {
-	int w, c, nb, delta, nl, nr, rw;
+	int w, c, nb, delta, nl, nr, increment, h, a, ca;
 	Frbox *b;
-	char *s, tmp[TMPSIZE+3];	/* +3 for rune overflow */
-	uchar *p;
+#if 0
+	// char *s, tmp[TMPSIZE+3];	/* +3 for rune overflow */
+	// Rune tmp[TMPSIZE];
+#endif
+
+	STag def;
+	Rune* p;
+	Rune* s;
+	STag *starttp;
+	Point tp;
+
+	def = DEFAULTSTYLE;
+	increment = sstp ? 1 : 0;
 
 	frame.r = f->r;
 	frame.b = f->b;
@@ -24,6 +49,7 @@ bxscan(Frame *f, Rune *sp, Rune *ep, Point *ppt)
 	frame.nbox = 0;
 	frame.nchars = 0;
 	memmove(frame.cols, f->cols, sizeof frame.cols);
+	frame.styles = f->styles;
 	delta = DELTA;
 	nl = 0;
 	for(nb=0; sp<ep && nl<=f->maxlines; nb++,frame.nbox++){
@@ -37,39 +63,53 @@ bxscan(Frame *f, Rune *sp, Rune *ep, Point *ppt)
 		if(c=='\t' || c=='\n'){
 			b->bc = c;
 			b->wid = 5000;
-			b->minwid = (c=='\n')? 0 : stringwidth(frame.font, " ");
+			b->height = f->font->height;
+			b->minwid = (c=='\n')? 0 : stringwidth(frame.font, " ");	// NB: don't have to convert.
 			b->nrune = -1;
 			if(c=='\n')
 				nl++;
 			frame.nchars++;
 			sp++;
 		}else{
-			s = tmp;
+			s = sp;
+			starttp = sstp;
 			nr = 0;
-			w = 0;
+			a = 0;
+			w = 0;			
+			h = 0;
 			while(sp < ep){
 				c = *sp;
 				if(c=='\t' || c=='\n')
 					break;
-				rw = runetochar(s, sp);
-				if(s+rw >= tmp+TMPSIZE)
+				// rw = runetochar(s, sp);
+				if(sp - s >= TMPSIZE)
 					break;
-				w += runestringnwidth(frame.font, sp, 1);
+				tp = _srunestringnwidth(sp, 1, sstp, f->styles, &ca);
+				w += tp.x;
+				h = _max(tp.y, h);
+				a = _max(a, ca);
 				sp++;
-				s += rw;
+				sstp += increment;
 				nr++;
 			}
-			*s++ = 0;
-			p = _frallocstr(f, s-tmp);
+			p = _frallocstr(f, sp - s);
 			b = &frame.box[nb];
 			b->ptr = p;
-			memmove(p, tmp, s-tmp);
+			memmove(p, s, (sp - s) * sizeof(Rune));
+			if (sstp) {
+				b->ptags = _fralloctags(f, sp - s);
+				memmove(b->ptags, starttp, (sp - s) * sizeof(STag));
+			} else {
+				b->ptags = 0;
+			}
 			b->wid = w;
+			b->height = h;
+			b->ascent = a;
 			b->nrune = nr;
 			frame.nchars += nr;
 		}
 	}
-	_frcklinewrap0(f, ppt, &frame.box[0]);
+	_frcklinewrap0(f, ppt, &frame.box[0], h0);
 	return _frdraw(&frame, *ppt);
 }
 
@@ -94,34 +134,44 @@ chopframe(Frame *f, Point pt, ulong p, int bn)
 		_frdelbox(f, (int)(b-f->box), f->nbox-1);
 }
 
+
+/*
+	sps is a pointer to the STag* run for the given Rune run. There
+	is a 1-to-1 correspondence between Runes and STags.
+	sps is allowed to be 0 which makes the font become the default.
+
+	FIXME: make sure that the font is set up correctly.
+*/
 void
-frinsert(Frame *f, Rune *sp, Rune *ep, ulong p0)
+frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 {
-	Point pt0, pt1, opt0, ppt0, ppt1, pt;
+	Frtxtorigin pt0, pt1, opt0, ppt0, ppt1, pt;
 	Frbox *b;
 	int n, n0, nn0, y;
 	ulong cn0;
 	Image *col, *tcol;
 	Rectangle r;
 	static struct{
-		Point pt0, pt1;
+		Frtxtorigin pt0, pt1;
 	}*pts;
 	static int nalloc=0;
 	int npts;
+	// int h0;
 
 	if(p0>f->nchars || sp==ep || f->b==nil)
 		return;
+	pt0 = _frsptofcharh(f, p0);	// FIXME: remove redundant measurement.
 	n0 = _frfindbox(f, 0, 0, p0);
 	cn0 = p0;
 	nn0 = n0;
 	pt0 = _frptofcharnb(f, p0, n0);
 	ppt0 = pt0;
 	opt0 = pt0;
-	pt1 = bxscan(f, sp, ep, &ppt0);
+	pt1 = bxscan(f, sp, ep, &ppt0, sps, h0);
 	ppt1 = pt1;
 	if(n0 < f->nbox){
 		_frcklinewrap(f, &pt0, b = &f->box[n0]);	/* for frdrawsel() */
-		_frcklinewrap0(f, &ppt1, b);
+		_frcklinewrap0(f, &ppt1, b, b->height);
 	}
 	f->modified = 1;
 	/*
@@ -129,8 +179,28 @@ frinsert(Frame *f, Rune *sp, Rune *ep, ulong p0)
 	 * insertion is complete. pt0 is current location of insertion position
 	 * (p0); pt1 is terminal point (without line wrap) of insertion.
 	 */
-	if(f->p0 == f->p1)
-		frtick(f, frptofchar(f, f->p0), 0);
+
+	/*
+	 * The new boxes inherit height / ascent from the boxes they'll merge with.
+	 */
+	// FIXME: are we correctly handling inserting of a new line. When we have lines of different height.
+	if (n0 > 0 && n0-1 < f->nbox) {
+		frame.box[0].height = _max(frame.box[0].height, f->box[n0-1].height);
+		frame.box[0].ascent = _max(frame.box[0].ascent, f->box[n0-1].ascent);
+	}
+	if (n0 >= 0 && n0 < f->nbox) {
+		frame.box[frame.nbox].height = _max(frame.box[frame.nbox].height, f->box[n0].height);
+		frame.box[frame.nbox].ascent = _max(frame.box[frame.nbox].ascent, f->box[n0].ascent);
+	}
+
+	if(f->p0 == f->p1) {
+		int b0 = 0;
+		Point pt = _frsptofchar(f, f->p0, &b0);
+		// FIXME: we already have the box num right.
+		// we even already have the right height?
+		print("n0 == b0?: %d, %d\n", n0, b0);
+		frstick(f, pt, 0, (b0 >= 0) ? f->box[b0].height : 0);
+	}
 
 	/*
 	 * Find point where old and new x's line up
@@ -142,7 +212,7 @@ frinsert(Frame *f, Rune *sp, Rune *ep, ulong p0)
 	for(b = &f->box[n0],npts=0;
 	     pt1.x!=pt0.x && pt1.y!=f->r.max.y && n0<f->nbox; b++,n0++,npts++){
 		_frcklinewrap(f, &pt0, b);
-		_frcklinewrap0(f, &pt1, b);
+		_frcklinewrap0(f, &pt1, b, b->height);
 		if(b->nrune > 0){
 			n = _frcanfit(f, pt1, b);
 			if(n == 0)
@@ -178,6 +248,7 @@ frinsert(Frame *f, Rune *sp, Rune *ep, ulong p0)
 		int q0, q1;
 
 		y = f->r.max.y;
+		// FIXME: There is not one font height.
 		q0 = pt0.y+f->font->height;
 		q1 = pt1.y+f->font->height;
 		f->nlines += (q1-q0)/f->font->height;
@@ -195,6 +266,7 @@ frinsert(Frame *f, Rune *sp, Rune *ep, ulong p0)
 			draw(f->b, r, f->b, nil, pt0);
 		}
 	}
+	// FIXME: for height. oh yeah
 	/*
 	 * Move the old stuff down to make room.  The loop will move the stuff
 	 * between the insertion and the point where the x's lined up.
@@ -267,7 +339,16 @@ frinsert(Frame *f, Rune *sp, Rune *ep, ulong p0)
 		tcol = f->cols[TEXT];
 	}
 	frselectpaint(f, ppt0, ppt1, col);
-	_frdrawtext(&frame, ppt0, tcol, col);
+
+	/*
+		FIXME: if the line height has changed, we ned to push down the
+		current line.
+
+		We find the heights of the box(es) enclosing the new boxes and
+		adjust the height/ascent from that. (Above)
+	*/
+
+	 _frdrawtext(&frame, ppt0, tcol, col);
 	_fraddbox(f, nn0, frame.nbox);
 	for(n=0; n<frame.nbox; n++)
 		f->box[nn0+n] = frame.box[n];
@@ -286,6 +367,17 @@ frinsert(Frame *f, Rune *sp, Rune *ep, ulong p0)
 		f->p1 += frame.nchars;
 	if(f->p1 > f->nchars)
 		f->p1 = f->nchars;
-	if(f->p0 == f->p1)
-		frtick(f, frptofchar(f, f->p0), 1);
+	if(f->p0 == f->p1) {
+		int b = 0; 
+		Point pt = _frsptofchar(f, f->p0, &b);
+		frstick(f, pt, 1, f->box[b].height);
+	}
+}
+
+
+
+void
+frinsert(Frame *f, Rune *sp, Rune *ep, ulong p0)
+{
+	frsinsert(f, sp, ep, 0, p0);
 }

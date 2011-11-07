@@ -54,8 +54,11 @@ _frfreebox(Frame *f, int n0, int n1)	/* inclusive */
 		drawerror(f->display, "_frfreebox");
 	n1++;
 	for(i=n0; i<n1; i++)
-		if(f->box[i].nrune >= 0)
+		if(f->box[i].nrune >= 0) {
 			free(f->box[i].ptr);
+			if (f->box[i].ptags)
+				free(f->box[i].ptags);
+		}
 }
 
 void
@@ -71,58 +74,65 @@ static
 void
 dupbox(Frame *f, int bn)
 {
-	uchar *p;
+	Rune *p;
+	STag* s;
 
 	if(f->box[bn].nrune < 0)
 		drawerror(f->display, "dupbox");
 	_fraddbox(f, bn, 1);
 	if(f->box[bn].nrune >= 0){
-		p = _frallocstr(f, NBYTE(&f->box[bn])+1);
-		strcpy((char*)p, (char*)f->box[bn].ptr);
+		p = _frallocstr(f, NRUNE(&f->box[bn])+1);
+		// runestrcpy(p, f->box[bn].ptr);
+		memcpy(p, f->box[bn].ptr, NRUNE(&f->box[bn]) * sizeof(Rune));
 		f->box[bn+1].ptr = p;
-	}
-}
-
-static
-uchar*
-runeindex(uchar *p, int n)
-{
-	int i, w;
-	Rune rune;
-
-	for(i=0; i<n; i++,p+=w)
-		if(*p < Runeself)
-			w = 1;
-		else{
-			w = chartorune(&rune, (char*)p);
-			USED(rune);
+		f->box[bn+1].ptags = 0;
+		if (f->box[bn].ptags) {
+			s = _fralloctags(f, NRUNE(&f->box[bn])+1);
+			memcpy(s, f->box[bn].ptags, NRUNE(&f->box[bn]) * sizeof(STag));
+			f->box[bn+1].ptags = s;
 		}
-	return p;
+	}
 }
 
 static
 void
 truncatebox(Frame *f, Frbox *b, int n)	/* drop last n chars; no allocation done */
 {
+	Point pt;
+
+	print("truncatebox dropping %d\n", n);
+	print("before: <%0.*S>\n", b->nrune, b->ptr);
 	if(b->nrune<0 || b->nrune<n)
 		drawerror(f->display, "truncatebox");
 	b->nrune -= n;
-	runeindex(b->ptr, b->nrune)[0] = 0;
-	b->wid = stringwidth(f->font, (char *)b->ptr);
+	// b->ptr[b->nrune] = 0; // FIXME possibly unnecessary.
+	pt = _srunestringnwidth(b->ptr, b->nrune, b->ptags, f->styles, &b->ascent);
+	b->wid = pt.x;
+	b->height = pt.y;
+	print("after: <%0.*S>\n", b->nrune, b->ptr);
 }
 
 static
 void
 chopbox(Frame *f, Frbox *b, int n)	/* drop first n chars; no allocation done */
 {
-	char *p;
+	Rune *p;
+	Point pt;
 
+	print("chopbox dropping %d\n", n);
+	print("before: <%0.*S>\n", b->nrune, b->ptr);
 	if(b->nrune<0 || b->nrune<n)
 		drawerror(f->display, "chopbox");
-	p = (char*)runeindex(b->ptr, n);
-	memmove((char*)b->ptr, p, strlen(p)+1);
+	// p = (char*)runeindex(b->ptr, n);
+	p = b->ptr + n;
 	b->nrune -= n;
-	b->wid = stringwidth(f->font, (char *)b->ptr);
+	memmove(b->ptr, p, sizeof(Rune) * b->nrune);
+	if (b->ptags)
+		memmove(b->ptags, b->ptags + n, sizeof(STag) * b->nrune);
+	pt = _srunestringnwidth(b->ptr, b->nrune, b->ptags, f->styles, &b->ascent);
+	b->wid = pt.x;
+	b->height = pt.y;
+	print("after: <%0.*S>\n", b->nrune, b->ptr);
 }
 
 void
@@ -139,9 +149,13 @@ _frmergebox(Frame *f, int bn)		/* merge bn and bn+1 */
 	Frbox *b;
 
 	b = &f->box[bn];
-	_frinsure(f, bn, NBYTE(&b[0])+NBYTE(&b[1])+1);
-	strcpy((char*)runeindex(b[0].ptr, b[0].nrune), (char*)b[1].ptr);
+	_frinsure(f, bn, b[0].nrune + b[1].nrune + 1);
+	memcpy(b[0].ptr + b[0].nrune, b[1].ptr, (b[1].nrune + 1) * sizeof(Rune));
+	if (b->ptags)
+		memcpy(b[0].ptags + b[0].nrune, b[1].ptags, (b[1].nrune + 1) * sizeof(STag));
 	b[0].wid += b[1].wid;
+	b[0].height = _max(b[0].height, b[1].height);
+	b[0].ascent = _max(b[0].ascent, b[1].ascent);
 	b[0].nrune += b[1].nrune;
 	_frdelbox(f, bn+1, bn+1);
 }

@@ -49,3 +49,18 @@ runestringnbgop(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r, in
 {
 	return _string(dst, pt, src, sp, f, nil, r, len, dst->clipr, bg, bgp, op);
 }
+
+// Styled
+// FIXME: worry about how we paint selection rectangles.
+Point
+srunestringbg(Image *dst, Point pt, Rune *r, STag* stags, Style* styles, int ascent)
+{
+	return _sstring(dst, pt, r, 1<<24, dst->clipr, SoverD, stags, styles, ascent);
+}
+
+// Styled
+Point
+srunestringnbg(Image *dst, Point pt, Rune *r, int len, STag* stags, Style* styles, int ascent)
+{
+	return _sstring(dst, pt,  r, len, dst->clipr, SoverD, stags, styles, ascent);
+}

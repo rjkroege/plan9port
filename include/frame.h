@@ -6,6 +6,7 @@ extern "C" {
 
 AUTOLIB(frame)
 
+typedef struct Frtxtorigin Frtxtorigin;
 typedef struct Frbox Frbox;
 typedef struct Frame Frame;
 
@@ -19,18 +20,30 @@ enum{
 };
 
 #define	FRTICKW	3
+
+struct Frtxtorigin
+{
+	Point pt;		/* Top left corner position of text */
+	int height;		/* Height of text */
+	int ascent;		/* Ascent of text */
+};
+
 struct Frbox
 {
-	long		wid;		/* in pixels */
-	long		nrune;		/* <0 ==> negate and treat as break char */
-	uchar	*ptr;
-	short	bc;	/* break char */
+	int		wid;	/* in pixels */
+	int	height;	/* in pixels */
+	int	ascent;	/* in pixels */
+	long	nrune;	/* <0 ==> negate and treat as break char */
+	Rune	*ptr;
+	STag*	ptags;
+	short	bc;		/* break char */
 	short	minwid;
 };
 
 struct Frame
 {
-	Font		*font;		/* of chars in the frame */
+	// FIXME: delete this and handle the results...
+	Font		*font;		/* of default chars in the frame */
 	Display		*display;	/* on which frame appears */
 	Image		*b;		/* on which frame appears */
 	Image		*cols[NCOL];	/* text and background colors */
@@ -51,6 +64,9 @@ struct Frame
 	int			ticked;	/* flag: is tick onscreen? */
 	int			noredraw;	/* don't draw on the screen */
 	int			tickscale;	/* tick scaling factor */
+	int			msc;	/* maxium valid stye tag value */
+	Style*		styles; /* Pointer to array of styles */
+	Style			defaultstyle; /* Single style for unstyled frames */
 };
 
 ulong	frcharofpt(Frame*, Point);
@@ -66,8 +82,16 @@ void	frsetrects(Frame*, Rectangle, Image*);
 void	frclear(Frame*, int);
 void	frredraw(Frame*);
 
-uchar	*_frallocstr(Frame*, unsigned);
+void frsinsert(Frame*, Rune*, Rune*, STag*, ulong);
+void frsinit(Frame*, Rectangle, Style*, int sc, Image*, Image** cols);
+void	frstick(Frame*, Point, int, int);
+Point _frsptofchar(Frame*, ulong, int*);
+Point _frsptofcharh(Frame*, ulong, int*);
+void frsselectpaint(Frame*, Point, Point, Image*, int, int);
+
+Rune	*_frallocstr(Frame*, unsigned);
 void	_frinsure(Frame*, int, unsigned);
+STag* _fralloctags(Frame*, unsigned);
 Point	_frdraw(Frame*, Point);
 void	_frgrowbox(Frame*, int);
 void	_frfreebox(Frame*, int, int);
@@ -78,21 +102,33 @@ int	_frfindbox(Frame*, int, ulong, ulong);
 void	_frclosebox(Frame*, int, int);
 int	_frcanfit(Frame*, Point, Frbox*);
 void	_frcklinewrap(Frame*, Point*, Frbox*);
-void	_frcklinewrap0(Frame*, Point*, Frbox*);
+void	_frcklinewrap0(Frame*, Point*, Frbox*, int);
 void	_fradvance(Frame*, Point*, Frbox*);
 int	_frnewwid(Frame*, Point, Frbox*);
 int	_frnewwid0(Frame*, Point, Frbox*);
 void	_frclean(Frame*, Point, int, int);
 void	_frdrawtext(Frame*, Point, Image*, Image*);
 void	_fraddbox(Frame*, int, int);
-Point	_frptofcharptb(Frame*, ulong, Point, int);
+Point	_frptofcharptb(Frame*, ulong, Point, int*);
 Point	_frptofcharnb(Frame*, ulong, int);
 int	_frstrlen(Frame*, int);
 void	frtick(Frame*, Point, int);
 void	frinittick(Frame*);
+void _frresizetick(Frame*, int);
 
 #define	NRUNE(b)	((b)->nrune<0? 1 : (b)->nrune)
-#define	NBYTE(b)	strlen((char*)(b)->ptr)
+// FIXME: Every NBYTE usage is suspect.
+// #define	NBYTE(b)	strlen((char*)(b)->ptr)
+
+static int
+_max(int a, int b)
+{
+	if (a < b)
+		return b;
+	else
+		return a;
+}
+
 #if defined(__cplusplus)
 }
 #endif
