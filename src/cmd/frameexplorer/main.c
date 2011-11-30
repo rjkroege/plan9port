@@ -539,13 +539,13 @@ void
 boringFontifyBufferTest(StyleFrame* sframe) {
 	// Really hokey rules:
 	// Comments start with //
-	// First word on line is bold
+	// Second word on line is bold
 	// other words alternate between keyword and default
 	// print("boringFontifyBufferTest\n");
 
 	// this code is crap.
 
-	int state = fSTART, i, o;
+	int state = fDEF, i, o;
 	Rune r;
 
 	for (i = 0, o = 0 ; i <	sframe->lastr; i++) {
@@ -567,7 +567,10 @@ boringFontifyBufferTest(StyleFrame* sframe) {
 			} else if (r == '\n') {
 				setstagsforrunerange(sframe->tagstring + o, DEFAULTSTYLE, i - o);
 				o = i + 1;
+				state = fDEF;
+			} else if (r == ' ' || r == '\t') {
 				state = fSTART;
+				o = i;
 			}
 			break;
 		case fCOMMENT:
@@ -575,7 +578,7 @@ boringFontifyBufferTest(StyleFrame* sframe) {
 				print("end of a comment\n");
 				setstagsforrunerange(sframe->tagstring + o, COMMENT, i - o);
 				o = i + 1;
-				state = fSTART;
+				state = fDEF;
 			}
 			break;
 		}		
