@@ -111,3 +111,17 @@ _frclean(Frame *f, Point pt, int n0, int n1)	/* look for mergeable boxes */
 	if(pt.y >= f->r.max.y)
 		f->lastlinefull = 1;
 }
+
+void
+_frdiagdump(Frame *f)
+{
+	int i;
+	Frbox* b;
+	print("nbox: %d\n", f->nbox);
+	for (i = 0, b = &f->box[0]; i < f->nbox; i++, b++) {
+		if (b->nrune > -1)
+			print("\t[%d]: wid: %d height: %d nrune: %d, <%0.*S>\n", i, b->wid, b->height, b->nrune, b->nrune, b->ptr);
+		else
+			print("\t[%d]: wid: %d height: %d nrune: %d\n", i, b->wid, b->height, b->nrune);
+	}
+}
