@@ -88,6 +88,7 @@ void	frstick(Frame*, Point, int, int);
 Point _frsptofchar(Frame*, ulong, int*);
 Point _frsptofcharh(Frame*, ulong, int*);
 void frsselectpaint(Frame*, Point, Point, Image*, int, int);
+void _frdiagdump(Frame *f);
 
 Rune	*_frallocstr(Frame*, unsigned);
 void	_frinsure(Frame*, int, unsigned);
