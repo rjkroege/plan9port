@@ -135,6 +135,9 @@ typedef struct  {
 	int lastr;
 	int maxr;
 	int forg; // origin within frame from larger_buffer;
+
+	// support cursor motion
+	int point;
 } StyleFrame;
 
 // What will the methods look like?
@@ -242,6 +245,7 @@ threadmain(volatile int argc, char **volatile argv)
 	// iNB: a styledframe does not use the font
 	sframe.styledefns = styledefns;
 	sframe.lastr = 0;
+	sframe.point = 0;
 	sframe.maxr = 100;
 	sframe.tagstring = mallocz(sizeof(char) * sframe.maxr, 1);
 	sframe.larger_buffer = mallocz(sizeof(Rune) * sframe.maxr, 1);
@@ -289,7 +293,8 @@ keyboardthread(void *v)
 			print("received rune %d, '%c'\n", r, r);
 			// mesg("key event\n");
 			
-			if (r == 8 ) {
+			switch (r) {
+			case 8: /*Backspace */
 				if (sframe.lastr > 0) {
 					print("sframe.lastr %d\n", sframe.lastr);
 					sframe.larger_buffer[sframe.lastr] = 0;
@@ -321,8 +326,30 @@ keyboardthread(void *v)
 						}
 					}
 				}
-			} else {
+				break;
+			case 0x10: /* ^P  */
+				print("^p\n");
+				break;
+			case 0x0e: /* ^N */
+				print("^n\n");
+				break;
+			case 0x06:	/* ^F: was complete */
+				print("^f\n");
+				frtick(f, frptofchar(f, sframe.point - sframe.forg), 0);
+				if (sframe.point < sframe.lastr)
+					sframe.point++;
+				frtick(f, frptofchar(f, sframe.point - sframe.forg), 1);
+				break;
+			case 0x2:  /* ^B */
+				print("^b\n");
+				frtick(f, frptofchar(f, sframe.point - sframe.forg), 0);
+				if (sframe.point > 0)
+					sframe.point--;
+				frtick(f, frptofchar(f, sframe.point - sframe.forg), 1);
+				break;			
+			default:
 				insertCharacter(&sframe, r);
+				break;
 			}
 		
 			displayFontiffiedBufferTest(screen, &sframe, Pt(500, 200));
@@ -364,11 +391,21 @@ insertCharacter(StyleFrame* sframe, Rune r)
 		setstagsforrunerange(sframe->tagstring, DEFAULTSTYLE, sframe->maxr * 2);
 		sframe->maxr *= 2;
 	}
-	sframe->larger_buffer[sframe->lastr] = r;
-	// or remove if pressing backspace (next phase)
-	// update the frame from the text model
-	// get a point near the end.
-	
+
+	// FIXME: we want some stupid text insertion.
+	// Can maintain an additional character for "the point". And move it around.
+	// And insert characters there.
+
+	// Make room for more, have enough space already.
+	if (sframe->point != sframe->lastr) {
+		memmove(sframe->larger_buffer + sframe->point + 1,
+				sframe->larger_buffer + sframe->point,
+				sframe->lastr - sframe->point);
+	}
+
+	sframe->larger_buffer[sframe->point] = r;
+
+	// Probably broken with the introduction of cursor motion.
 	if (f->lastlinefull || f->maxlines - f->nlines < 2) {
 		// scroll up a line
 		sframe->forg = sframe->forg + f->nchars / 2;
@@ -377,10 +414,14 @@ insertCharacter(StyleFrame* sframe, Rune r)
 
 	// Fontify the buffer here.
 	sframe->lastr++;
-	reFontify(sframe);
+	sframe->point++;
+	reFontify(sframe); 
+	// FIXME: need to adjust the inserted content based on what's changed while re-fontifying.
+	// Observation: considerable room for optimization exists here.
 
-	frsinsert(f, sframe->larger_buffer + sframe->lastr -1,
-			sframe->larger_buffer + sframe->lastr, sframe->tagstring + sframe->lastr - 1, sframe->frame.p1);
+	frsinsert(f, sframe->larger_buffer + sframe->point -1,
+			sframe->larger_buffer + sframe->point, sframe->tagstring + sframe->point - 1,
+			sframe->point - 1 - sframe->forg);
 
 	tp = frptofchar(f, sframe->frame.p1);
 	print("point of char %d: (%d, %d)\n", sframe->frame.p1, tp.x, tp.y);

@@ -6,7 +6,7 @@ extern "C" {
 
 AUTOLIB(frame)
 
-typedef struct Frtxtorigin Frtxtorigin;
+typedef struct Frboxorigin Frboxorigin;
 typedef struct Frbox Frbox;
 typedef struct Frame Frame;
 
@@ -21,7 +21,7 @@ enum{
 
 #define	FRTICKW	3
 
-struct Frtxtorigin
+struct Frboxorigin
 {
 	Point pt;		/* Top left corner position of text */
 	int height;		/* Height of text */
@@ -89,6 +89,7 @@ Point _frsptofchar(Frame*, ulong, int*);
 Point _frsptofcharh(Frame*, ulong, int*);
 void frsselectpaint(Frame*, Point, Point, Image*, int, int);
 void _frdiagdump(Frame *f);
+Frboxorigin _frsboxoriginofchar(Frame *f, ulong p);
 
 Rune	*_frallocstr(Frame*, unsigned);
 void	_frinsure(Frame*, int, unsigned);

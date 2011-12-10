@@ -49,8 +49,25 @@ _frsptofchar(Frame *f, ulong p, int* box)
 }
 
 // FIXME: Handle the situation of interest with out the _fradvance
-Frtxtorigin
-_frsptofcharh(Frame *f, ulong p)
+// FIXME: Refactoring (conceivably).
+/*
+ * Returns the origin for the box containing character p including height.
+*/
+Frboxorigin
+_frsboxoriginofchar(Frame *f, ulong p)
+{
+	int b = 0;
+	Frboxorigin bxor;
+	bxor.pt = _frptofcharptb(f, p, f->r.min, &b);
+	bxor.height = (b >= 0) ? f->box[b].height : 0;
+	bxor.ascent = (b >= 0) ? f->box[b].ascent : 0;
+	return bxor;
+}
+
+// FIXME: Handle the situation of interest with out the _fradvance
+// FIXME: remove this when all uses of this function have been converted to frsorignofchar
+Point
+_frsptofcharh(Frame *f, ulong p, int* height)
 {
 	int b = 0;
 	Point pt = _frptofcharptb(f, p, f->r.min, &b);

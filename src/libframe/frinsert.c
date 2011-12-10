@@ -9,22 +9,25 @@
 static Frame		frame;
 
 /*
-	To provide compatability with the older un-styled code
-	in place, it would be convenient if we did not have to
-	provide style tags. I need a general mechanism for
-	this.
 
-	style[DEFAULTSTYLE] will always have a font. So, if the STag*
-	is 0, assume that all STag values are 0 and hence pick the default
-	style.
+   Current plan
+   ============
 
-	FIXME: document that DEFAULTSTYLE must always exist.
-	FIXME: consider re-writing some of the other drawing code to work this way to force rightness.
+	We must
+	a) find the start & end origins (note new type) of inserted region
+	b) obtain origin of predecessor box to see if we need to re-draw at new height
+	c) reflow the displaced existing boxes as necessary regions, working in origins
+	d) move all un-affected boxes down as needed
+	e) draw the inserted characters in the newly cleared space
+
+    Note that until the clean step, there can be 2 boxes for the first and
+    last lines respectively.
+
 */
 
 static
 Point
-bxscan(Frame *f, Rune *sp, Rune *ep, Frtxtorigin *ppt, STag* sstp, int h0)
+bxscan(Frame *f, Rune *sp, Rune *ep, Point *ppt, STag* sstp, int h0)
 {
 	int w, c, nb, delta, nl, nr, increment, h, a, ca;
 	Frbox *b;
@@ -110,6 +113,7 @@ bxscan(Frame *f, Rune *sp, Rune *ep, Frtxtorigin *ppt, STag* sstp, int h0)
 		}
 	}
 	_frcklinewrap0(f, ppt, &frame.box[0], h0);
+	// NB: _frdraw, despite its name, doesn't actually do any drawing.
 	return _frdraw(&frame, *ppt);
 }
 
@@ -145,29 +149,43 @@ chopframe(Frame *f, Point pt, ulong p, int bn)
 void
 frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 {
-	Frtxtorigin pt0, pt1, opt0, ppt0, ppt1, pt;
+	Point pt0, pt1, opt0, ppt0, ppt1, pt;
 	Frbox *b;
 	int n, n0, nn0, y;
 	ulong cn0;
 	Image *col, *tcol;
 	Rectangle r;
 	static struct{
-		Frtxtorigin pt0, pt1;
+		Point pt0, pt1;
 	}*pts;
 	static int nalloc=0;
 	int npts;
-	// int h0;
+
+	int h0; 			// FIXME: might not need.
+
+
+	print("start of frinsert\n");
+	_frdiagdump(f);
+	print("\n");
 
 	if(p0>f->nchars || sp==ep || f->b==nil)
 		return;
-	pt0 = _frsptofcharh(f, p0);	// FIXME: remove redundant measurement.
+	_frsptofcharh(f, p0, &h0);	// FIXME: remove redundant measurement.
+
+	// n0 is the box immediately after the split.
+	// Box n0 may be getting shoved onto the end of the last inserted box.
 	n0 = _frfindbox(f, 0, 0, p0);
 	cn0 = p0;
 	nn0 = n0;
-	pt0 = _frptofcharnb(f, p0, n0);
+	pt0 = _frptofcharnb(f, p0, n0);		// Top left corner of box n0. switch to origin
 	ppt0 = pt0;
 	opt0 = pt0;
+	// Builds a line-broken group of new boxes for the inserted material.
 	pt1 = bxscan(f, sp, ep, &ppt0, sps, h0);
+	print("\noutput of bxscan @ pt1: %d %d\n", pt1.x, pt1.y);
+	_frdiagdump(&frame);
+
+	// What is this for.
 	ppt1 = pt1;
 	if(n0 < f->nbox){
 		_frcklinewrap(f, &pt0, b = &f->box[n0]);	/* for frdrawsel() */
@@ -184,6 +202,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 	 * The new boxes inherit height / ascent from the boxes they'll merge with.
 	 */
 	// FIXME: are we correctly handling inserting of a new line. When we have lines of different height.
+	// From here down, we need to reflow the inserted boxes. 
 	if (n0 > 0 && n0-1 < f->nbox) {
 		frame.box[0].height = _max(frame.box[0].height, f->box[n0-1].height);
 		frame.box[0].ascent = _max(frame.box[0].ascent, f->box[n0-1].ascent);
@@ -193,6 +212,8 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 		frame.box[frame.nbox].ascent = _max(frame.box[frame.nbox].ascent, f->box[n0].ascent);
 	}
 
+	// Hide/show the cursor
+	// FIXME: refactoring opportunities abound.
 	if(f->p0 == f->p1) {
 		int b0 = 0;
 		Point pt = _frsptofchar(f, f->p0, &b0);
@@ -202,7 +223,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 		frstick(f, pt, 0, (b0 >= 0) ? f->box[b0].height : 0);
 	}
 
-	/*
+/*
 	 * Find point where old and new x's line up
 	 * Invariants:
 	 *	pt0 is where the next box (b, n0) is now
@@ -266,6 +287,13 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 			draw(f->b, r, f->b, nil, pt0);
 		}
 	}
+
+	// My observation is that we need to move down whole lines after n0
+	// cause we're going to draw the rest.
+	// two more rects: before (first whole line later) and after
+
+	// just clear + draw the line broken rectangles instead of the below.
+
 	// FIXME: for height. oh yeah
 	/*
 	 * Move the old stuff down to make room.  The loop will move the stuff
@@ -372,6 +400,8 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 		Point pt = _frsptofchar(f, f->p0, &b);
 		frstick(f, pt, 1, f->box[b].height);
 	}
+	print("\nEnd of frinsert\n");
+	_frdiagdump(f);
 }
 
 
