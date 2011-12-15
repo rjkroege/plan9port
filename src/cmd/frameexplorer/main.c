@@ -250,6 +250,9 @@ threadmain(volatile int argc, char **volatile argv)
 	sframe.tagstring = mallocz(sizeof(char) * sframe.maxr, 1);
 	sframe.larger_buffer = mallocz(sizeof(Rune) * sframe.maxr, 1);
 
+	// Run unit tests on Frame.
+	runAllTests(&sframe.frame);
+
 	// cribbed from acme
 	mousectl = initmouse(nil, screen);
 	if(mousectl == nil){

@@ -3,11 +3,10 @@
 TARG=frameexplorer
 
 OFILES=\
-	main.$O
+	main.$O \
+	tests.$O
 
-#HFILES=dat.h\
-#	edit.h\
-#	fns.h\
+HFILES=tests.h
 
 <$PLAN9/src/mkone
 
