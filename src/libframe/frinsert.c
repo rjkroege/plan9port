@@ -14,16 +14,18 @@ static Frame		frame;
    ============
 
 	We must
-	a) find the start & end origins (note new type) of inserted region
-	b) obtain origin of predecessor box to see if we need to re-draw at new height
-	c) reflow the displaced existing boxes as necessary regions, working in origins
-	d) move all un-affected boxes down as needed
-	e) draw the inserted characters in the newly cleared space
 
-    Note that until the clean step, there can be 2 boxes for the first and
-    last lines respectively.
-
+	* find the last box above the insertion point
+	* find the co-linear box before the insertion
+	* find the co-linear box immediately after the insertion 
+	* create new boxes for the inserted material.
+	* find the first box after a line break
+	* assign heights
+	* move unaffected boxes down
+	* draw boxes in hole
 */
+
+
 
 static
 Point
@@ -112,6 +114,7 @@ bxscan(Frame *f, Rune *sp, Rune *ep, Point *ppt, STag* sstp, int h0)
 			frame.nchars += nr;
 		}
 	}
+
 	_frcklinewrap0(f, ppt, &frame.box[0], h0);
 	// NB: _frdraw, despite its name, doesn't actually do any drawing.
 	return _frdraw(&frame, *ppt);
@@ -139,30 +142,39 @@ chopframe(Frame *f, Point pt, ulong p, int bn)
 }
 
 
+static
+int heightofbox(Frame *f, int n) {
+	if (n > -1 && n < f->nbox)
+		return f->box[n].height;
+	else
+		// FIXME: verify that this is reasonable.
+		return 0;
+}
+
 /*
-	sps is a pointer to the STag* run for the given Rune run. There
+	sps is a pointer to the STag* run for the given Rune run. aThere
 	is a 1-to-1 correspondence between Runes and STags.
 	sps is allowed to be 0 which makes the font become the default.
-
-	FIXME: make sure that the font is set up correctly.
 */
 void
 frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 {
-	Point pt0, pt1, opt0, ppt0, ppt1, pt;
+	Point pt0, pt1, opt0, ppt0,  ppt1, ptn00, pt;
 	Frbox *b;
-	int n, n0, nn0, y;
+	int n, n0, nn0, y, n00;
 	ulong cn0;
 	Image *col, *tcol;
 	Rectangle r;
+	
+	// FIXME: clean this up.	
 	static struct{
 		Point pt0, pt1;
 	}*pts;
+
 	static int nalloc=0;
 	int npts;
 
-	int h0; 			// FIXME: might not need.
-
+	// int h0; 			// FIXME: might not need.
 
 	print("start of frinsert\n");
 	_frdiagdump(f);
@@ -170,20 +182,54 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 
 	if(p0>f->nchars || sp==ep || f->b==nil)
 		return;
-	_frsptofcharh(f, p0, &h0);	// FIXME: remove redundant measurement.
 
-	// n0 is the box immediately after the split.
-	// Box n0 may be getting shoved onto the end of the last inserted box.
+	// 
+	// _frsptofcharh(f, p0, &h0);	// FIXME: remove redundant measurement.
+
+	/* 
+	  n0 is the box immediately after the split where we will insert the given material.
+	  The possibility exists that after splitting, we have a co-linear box n00 before n0. We will
+	  redraw this box.
+	*/
 	n0 = _frfindbox(f, 0, 0, p0);
+
+	/*
+	  Determine if there is a different previous box n00 that is co-linear. If not,
+	  set n00 to n0.
+	  FIXME: Note that this is incorrect as tab characters are also -1 nrun boxes.
+	*/	
+	if (n0 - 1 > 0 && f->box[n0 - 1].nrune >= 0)
+		n00 = n0 - 1;
+	else
+		n00 = n0;
+	
+
 	cn0 = p0;
 	nn0 = n0;
-	pt0 = _frptofcharnb(f, p0, n0);		// Top left corner of box n0. switch to origin
+
+	pt0 = _frptofcharnb(f, p0, n0);		// Top left corner of box n0.
+
+	/*
+	  Preserve top left corner of box n00 for starting point of drawing.
+	*/
+	ptn00 = pt0;
+	if (n00 != n0) {
+		ptn00.x = f->r.min.x;
+	}
+	
 	ppt0 = pt0;
 	opt0 = pt0;
 	// Builds a line-broken group of new boxes for the inserted material.
-	pt1 = bxscan(f, sp, ep, &ppt0, sps, h0);
+
+	/*
+	  bxscan computes the top-left corner of n0 after the insertion.
+	  consequently, it needs the heights of the previous box and the next box
+	  in order to correctly set the heights of the generated content
+	*/
+	pt1 = bxscan(f, sp, ep, &ppt0, sps, heightofbox(f, n00));
 	print("\noutput of bxscan @ pt1: %d %d\n", pt1.x, pt1.y);
 	_frdiagdump(&frame);
+
 
 	// What is this for.
 	ppt1 = pt1;
@@ -284,7 +330,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 			r.min = pt1;
 			r.max.x = pt1.x+(f->r.max.x-pt0.x);
 			r.max.y = q1;
-			draw(f->b, r, f->b, nil, pt0);
+			// draw(f->b, r, f->b, nil, pt0);
 		}
 	}
 
@@ -307,7 +353,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 			r.max = r.min;
 			r.max.x += b->wid;
 			r.max.y += f->font->height;
-			draw(f->b, r, f->b, nil, pts[npts].pt0);
+			// draw(f->b, r, f->b, nil, pts[npts].pt0);
 			/* clear bit hanging off right */
 			if(npts==0 && pt.y>pt0.y){
 				/*
@@ -322,7 +368,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 					col = f->cols[HIGH];
 				else
 					col = f->cols[BACK];
-				draw(f->b, r, col, nil, r.min);
+				// draw(f->b, r, col, nil, r.min);
 			}else if(pt.y < y){
 				r.min = pt;
 				r.max = pt;
@@ -333,7 +379,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 					col = f->cols[HIGH];
 				else
 					col = f->cols[BACK];
-				draw(f->b, r, col, nil, r.min);
+				// draw(f->b, r, col, nil, r.min);
 			}
 			y = pt.y;
 			cn0 -= b->nrune;
@@ -352,7 +398,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 				col = f->cols[BACK];
 				tcol = f->cols[TEXT];
 			}
-			draw(f->b, r, col, nil, r.min);
+			// draw(f->b, r, col, nil, r.min);
 			y = 0;
 			if(pt.x == f->r.min.x)
 				y = pt.y;
@@ -376,7 +422,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 		adjust the height/ascent from that. (Above)
 	*/
 
-	 _frdrawtext(&frame, ppt0, tcol, col);
+	 // _frdrawtext(&frame, ppt0, tcol, col);
 	_fraddbox(f, nn0, frame.nbox);
 	for(n=0; n<frame.nbox; n++)
 		f->box[nn0+n] = frame.box[n];
@@ -386,6 +432,13 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 	}
 	n0 += frame.nbox;
 	_frclean(f, ppt0, nn0, n0<f->nbox-1? n0+1 : n0);
+	
+	// After we've rendered the boxes right, make the world beautiful again.
+	// FIXME: We can move stuff down. (if we know where) 
+	// We can start re-drawing on a target box instead of 0. (Need start corner)
+	draw(f->b, f->r, col, nil, ZP);
+	 _frdrawtext(f, f->r.min, f->cols[TEXT], col);
+	
 	f->nchars += frame.nchars;
 	if(f->p0 >= p0)
 		f->p0 += frame.nchars;

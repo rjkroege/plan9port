@@ -7,6 +7,8 @@
 int
 frdelete(Frame *f, ulong p0, ulong p1)
 {
+	print("not implmeneted delete\n");
+#if 0
 	Point pt0, pt1, ppt0;
 	Frbox *b;
 	int n0, n1, n, w0;
@@ -158,4 +160,5 @@ frdelete(Frame *f, ulong p0, ulong p1)
 	n = f->nlines;
 	f->nlines = (pt0.y-f->r.min.y)/f->font->height+(pt0.x>f->r.min.x);
 	return n - f->nlines;
+#endif	
 }

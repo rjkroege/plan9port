@@ -8,6 +8,7 @@
 // Propsoal: we need to 
 
 
+// FIXME: obtain the height as part of this function?
 int
 _frcanfit(Frame *f, Point pt, Frbox *b)
 {
@@ -46,6 +47,7 @@ _frcklinewrap0(Frame *f, Point *p, Frbox *b, int h)
 		// Must advance by the height of the line that the box doesn't fit on.
 		// This might be flawed if the inserted box in bxscan needs multiple
 		// lines?
+		// FIXME: max(h, height-of-piece-that-fits)
 		p->y += h;
 	}
 }

@@ -15,7 +15,7 @@ int
 testOne(Frame *f)
 {
 	print("Unimplemented test: fail\n");
-	return 0;
+	return 1;
 }
 
 

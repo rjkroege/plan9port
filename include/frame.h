@@ -21,13 +21,6 @@ enum{
 
 #define	FRTICKW	3
 
-struct Frboxorigin
-{
-	Point pt;		/* Top left corner position of text */
-	int height;		/* Height of text */
-	int ascent;		/* Ascent of text */
-};
-
 struct Frbox
 {
 	int		wid;	/* in pixels */
@@ -89,7 +82,6 @@ Point _frsptofchar(Frame*, ulong, int*);
 Point _frsptofcharh(Frame*, ulong, int*);
 void frsselectpaint(Frame*, Point, Point, Image*, int, int);
 void _frdiagdump(Frame *f);
-Frboxorigin _frsboxoriginofchar(Frame *f, ulong p);
 
 Rune	*_frallocstr(Frame*, unsigned);
 void	_frinsure(Frame*, int, unsigned);
