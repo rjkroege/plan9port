@@ -245,14 +245,14 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 	 */
 
 	/*
-	 * The new boxes inherit height / ascent from the boxes they'll merge with.
+	 * In order to make _fradvance work, a new box comprising a new line or tab inherits
+	 * the height of the previous box on the line.
 	 */
-	// FIXME: are we correctly handling inserting of a new line. When we have lines of different height.
-	// From here down, we need to reflow the inserted boxes. 
-	if (n0 > 0 && n0-1 < f->nbox) {
+	if (n0 > 0 && n0 - 1 < f->nbox && frame.box[0].nrune < 0) {
 		frame.box[0].height = _max(frame.box[0].height, f->box[n0-1].height);
 		frame.box[0].ascent = _max(frame.box[0].ascent, f->box[n0-1].ascent);
 	}
+#if 0
 	if (n0 >= 0 && n0 < f->nbox) {
 		frame.box[frame.nbox].height = _max(frame.box[frame.nbox].height, f->box[n0].height);
 		frame.box[frame.nbox].ascent = _max(frame.box[frame.nbox].ascent, f->box[n0].ascent);
@@ -450,7 +450,9 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 		f->p1 = f->nchars;
 	if(f->p0 == f->p1) {
 		int b = 0; 
+		// FIXME: Bug in _frsptofchar?
 		Point pt = _frsptofchar(f, f->p0, &b);
+		print("pre-frstick: b %d pt.x %d pt.y %d\n", b, pt.x, pt.y);
 		frstick(f, pt, 1, f->box[b].height);
 	}
 	print("\nEnd of frinsert\n");
