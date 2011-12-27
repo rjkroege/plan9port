@@ -4,6 +4,16 @@
 #include <mouse.h>
 #include <frame.h>
 
+/*
+	In the context of sframes where every line can conceivably
+	have a different height, this code assumes that the boxes
+	have been "cleaned" and so that this function receives
+	sequences of valid boxes.
+	
+	FIXME: Tabs need to get the height of the highest box on the
+	line so that co-linear box sequences end up with the same 
+	height.
+*/
 void
 _frdrawtext(Frame *f, Point pt, Image *text, Image *back)
 {
@@ -11,10 +21,12 @@ _frdrawtext(Frame *f, Point pt, Image *text, Image *back)
 	int nb;
 
 	for(nb=0,b=f->box; nb<f->nbox; nb++, b++){
-		_frcklinewrap(f, &pt, b);
+		print("frdraw.c:/^_frdrawtext/  pt: %d %d\n",  pt.x, pt.y);
 		if(!f->noredraw && b->nrune >= 0)
 			srunestringn(f->b, pt, b->ptr, b->nrune, b->ptags, f->styles, b->ascent);
 		pt.x += b->wid;
+		_frcklinewrap(f, &pt, b);
+		print("end of _frdrawtext loop before wrapping: frdraw.c:/^_frdrawtext/  pt: %d %d\n",  pt.x, pt.y);
 	}
 }
 

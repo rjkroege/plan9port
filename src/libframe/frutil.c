@@ -29,6 +29,15 @@ _frcanfit(Frame *f, Point pt, Frbox *b)
 	return 0;
 }
 
+/*
+	The presumption in the original code is that this
+	determination happens at the start of the actual text line.
+	But this moves us down too far.  So, we treat newline boxes as
+	being at the end of lines and wrap then.
+
+	FIXME: note that the change in the ordering assumption of the
+	use of _frcklinewrap may cause bugs elsewhere in the code.
+*/
 void
 _frcklinewrap(Frame *f, Point *p, Frbox *b)
 {
@@ -122,8 +131,10 @@ _frdiagdump(Frame *f)
 	print("nbox: %d\n", f->nbox);
 	for (i = 0, b = &f->box[0]; i < f->nbox; i++, b++) {
 		if (b->nrune > -1)
-			print("\t[%d]: wid: %d height: %d nrune: %d, <%0.*S>\n", i, b->wid, b->height, b->nrune, b->nrune, b->ptr);
+			print("\t[%d]: wid: %d\tminwid: %d\theight: %d\tascent: %d\tnrune: %d,\t<%0.*S>\n",
+				i, b->wid, b->minwid, b->height, b->ascent, b->nrune, b->nrune, b->ptr);
 		else
-			print("\t[%d]: wid: %d height: %d nrune: %d\n", i, b->wid, b->height, b->nrune);
+			print("\t[%d]: wid: %d\tminwid: %d\theight: %d\tascent: %d\tnrune: %d\n",
+				 i, b->wid, b->minwid, b->height, b->ascent, b->nrune);
 	}
 }
