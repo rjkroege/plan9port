@@ -97,6 +97,7 @@ void	_frclosebox(Frame*, int, int);
 int	_frcanfit(Frame*, Point, Frbox*);
 void	_frcklinewrap(Frame*, Point*, Frbox*);
 void	_frcklinewrap0(Frame*, Point*, Frbox*, int);
+void	_frcklinewrap1(Frame*, Point*, Frbox*);
 void	_fradvance(Frame*, Point*, Frbox*);
 int	_frnewwid(Frame*, Point, Frbox*);
 int	_frnewwid0(Frame*, Point, Frbox*);

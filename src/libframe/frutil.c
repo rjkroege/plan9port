@@ -37,16 +37,38 @@ _frcanfit(Frame *f, Point pt, Frbox *b)
 
 	FIXME: note that the change in the ordering assumption of the
 	use of _frcklinewrap may cause bugs elsewhere in the code.
+
+	FIXME: refactor the original function _frcklinewrap0 to be like this
+	one.
+	
+	In this version, we update the provided point such that it moves down
+	only on end of lines and otherwise, moves over to accomodate the
+	presence of tab characters.
 */
+void
+_frcklinewrap1(Frame *f, Point *p, Frbox *b)
+{
+	if((b->nrune<0 ? b->minwid : b->wid) > f->r.max.x - p->x){
+		p->x = f->r.min.x;
+		p->y += b->height;
+	} else {
+		p->x += b->wid;
+	}
+}
+
 void
 _frcklinewrap(Frame *f, Point *p, Frbox *b)
 {
-	if((b->nrune<0? b->minwid : b->wid) > f->r.max.x-p->x){
+	if((b->nrune<0 ? b->minwid : b->wid) > f->r.max.x-p->x){
 		p->x = f->r.min.x;
 		p->y += b->height;
 	}
 }
 
+/*
+	This function is radically different than _frcklinewrap and yet has
+	a deceptively similar name. Update so it's easier to understand.
+*/
 void
 _frcklinewrap0(Frame *f, Point *p, Frbox *b, int h)
 {
