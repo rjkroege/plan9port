@@ -433,8 +433,9 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 	n0 += frame.nbox;
 	_frclean(f, ppt0, nn0, n0<f->nbox-1? n0+1 : n0);
 	
-	// FIXME: Optimize by blitting the unaffected contents.
+	// FIXME: Optimize by blitting the unaffected contents down rather than re-drawing.
 	// FIXME: We can start re-drawing on a target box instead of 0. (Need start corner)
+	// FIXME: Stop drawing at the box whose end is past the bottom of the rectangle.
 
 	draw(f->b, f->r, col, nil, ZP);
 	 _frdrawtext(f, f->r.min, f->cols[TEXT], col);

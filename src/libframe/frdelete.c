@@ -7,8 +7,6 @@
 int
 frdelete(Frame *f, ulong p0, ulong p1)
 {
-	print("not implmeneted delete\n");
-#if 0
 	Point pt0, pt1, ppt0;
 	Frbox *b;
 	int n0, n1, n, w0;
@@ -84,7 +82,7 @@ frdelete(Frame *f, ulong p0, ulong p1)
 				b = &f->box[n1];
 			}
 			r.max.x += b->wid;
-			draw(f->b, r, f->b, nil, pt1);
+			// draw(f->b, r, f->b, nil, pt1);
 			cn1 += b->nrune;
 			
 			/* blank remainder of line */
@@ -92,7 +90,7 @@ frdelete(Frame *f, ulong p0, ulong p1)
 			r.max.x += w0 - b->wid;
 			if(r.max.x > f->r.max.x)
 				r.max.x = f->r.max.x;
-			draw(f->b, r, f->cols[BACK], nil, r.min);
+			// draw(f->b, r, f->cols[BACK], nil, r.min);
 		}else{
 			r.max.x += _frnewwid0(f, pt0, b);
 			if(r.max.x > f->r.max.x)
@@ -100,7 +98,7 @@ frdelete(Frame *f, ulong p0, ulong p1)
 			col = f->cols[BACK];
 			if(f->p0<=cn1 && cn1<f->p1)
 				col = f->cols[HIGH];
-			draw(f->b, r, col, nil, pt0);
+			// draw(f->b, r, col, nil, pt0);
 			cn1++;
 		}
 		_fradvance(f, &pt1, b);
@@ -108,6 +106,7 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		f->box[n0++] = f->box[n1++];
 		b++;
 	}
+	// FIXME: clean up the selection painting code.
 	if(n1==f->nbox && pt0.x!=pt1.x)	/* deleting last thing in window; must clean up */
 		frsselectpaint(f, pt0, pt1, f->cols[BACK], h0, h1);
 	if(pt1.y != pt0.y){
@@ -127,10 +126,10 @@ frdelete(Frame *f, ulong p0, ulong p1)
 			q2 = pt2.y+f->font->height;
 			if(q2 > f->r.max.y)
 				q2 = f->r.max.y;
-			draw(f->b, Rect(pt0.x, pt0.y, pt0.x+(f->r.max.x-pt1.x), q0),
-				f->b, nil, pt1);
-			draw(f->b, Rect(f->r.min.x, q0, f->r.max.x, q0+(q2-q1)),
-				f->b, nil, Pt(f->r.min.x, q1));
+			//draw(f->b, Rect(pt0.x, pt0.y, pt0.x+(f->r.max.x-pt1.x), q0),
+			//	f->b, nil, pt1);
+			//draw(f->b, Rect(f->r.min.x, q0, f->r.max.x, q0+(q2-q1)),
+			//	f->b, nil, Pt(f->r.min.x, q1));
 			frselectpaint(f, Pt(pt2.x, pt2.y-(pt1.y-pt0.y)), pt2, f->cols[BACK]);
 		}else
 			frselectpaint(f, pt0, pt2, f->cols[BACK]);
@@ -141,6 +140,16 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		ppt0.x -= f->box[nn0].wid;
 	}
 	_frclean(f, ppt0, nn0, n0<f->nbox-1? n0+1 : n0);
+	
+	print("\nEnd of deletion, immediately before drawing\n");
+	_frdiagdump(f);
+	print("f->noredraw: %d\n", f->noredraw);
+	
+	// FIXME: Same optimizations as we found in the insert case.
+	// FIXME: Update for selection painting.
+	draw(f->b, f->r, f->cols[BACK], nil, ZP);
+	 _frdrawtext(f, f->r.min, f->cols[TEXT], f->cols[BACK]);
+	
 	if(f->p1 > p1)
 		f->p1 -= p1-p0;
 	else if(f->p1 > p0)
@@ -152,6 +161,7 @@ frdelete(Frame *f, ulong p0, ulong p1)
 	f->nchars -= p1-p0;
 	if(f->p0 == f->p1) {
 		// here, we re-measure because we've cleaned above.
+		// NB: there would appear to be assorted bugs with this.
 		int b = 0; 
 		Point pt = _frsptofchar(f, f->p0, &b);
 		frstick(f, pt, 1, (b >= 0) ? f->box[b].height : 0);
@@ -160,5 +170,4 @@ frdelete(Frame *f, ulong p0, ulong p1)
 	n = f->nlines;
 	f->nlines = (pt0.y-f->r.min.y)/f->font->height+(pt0.x>f->r.min.x);
 	return n - f->nlines;
-#endif	
 }

@@ -302,7 +302,8 @@ keyboardthread(void *v)
 					print("sframe.lastr %d\n", sframe.lastr);
 					sframe.larger_buffer[sframe.lastr] = 0;
 					sframe.lastr--;
-	
+					sframe.point--;
+					
 					reFontify(&sframe);
 
 					frdelete(f, sframe.lastr - sframe.forg, sframe.lastr - sframe.forg + 1);
@@ -357,7 +358,7 @@ keyboardthread(void *v)
 		
 			displayFontiffiedBufferTest(screen, &sframe, Pt(500, 200));
 			flushimage(display, 1);
-			break;
+			// break;
 		}
 	}
 }
