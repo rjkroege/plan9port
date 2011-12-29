@@ -340,15 +340,23 @@ keyboardthread(void *v)
 			case 0x06:	/* ^F: was complete */
 				print("^f\n");
 				frtick(f, frptofchar(f, sframe.point - sframe.forg), 0);
-				if (sframe.point < sframe.lastr)
+				if (sframe.point < sframe.lastr) {
 					sframe.point++;
+					// FIXME: This needs to be updated for scroll.
+					f->p0++;
+					f->p1++;
+				}
 				frtick(f, frptofchar(f, sframe.point - sframe.forg), 1);
 				break;
 			case 0x2:  /* ^B */
 				print("^b\n");
 				frtick(f, frptofchar(f, sframe.point - sframe.forg), 0);
-				if (sframe.point > 0)
+				if (sframe.point > 0) {
 					sframe.point--;
+					// FIXME: This needs to be updated for scroll.
+					f->p0--;
+					f->p1--;
+				}
 				frtick(f, frptofchar(f, sframe.point - sframe.forg), 1);
 				break;			
 			default:

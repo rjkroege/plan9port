@@ -153,7 +153,7 @@ _frdiagdump(Frame *f)
 {
 	int i;
 	Frbox* b;
-	print("nbox: %d\n", f->nbox);
+	print("nbox: %d\tp0: %d\tp1: %d\n", f->nbox, f->p0, f->p1);
 	for (i = 0, b = &f->box[0]; i < f->nbox; i++, b++) {
 		if (b->nrune > -1)
 			print("\t[%d]: wid: %d\tminwid: %d\theight: %d\tascent: %d\tnrune: %d,\t<%0.*S>\n",
@@ -163,7 +163,6 @@ _frdiagdump(Frame *f)
 				 i, b->wid, b->minwid, b->height, b->ascent, b->nrune);
 	}
 }
-
 
 /*
 	Fix up the heights and ascents of boxes so that they are correct
