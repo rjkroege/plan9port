@@ -433,10 +433,24 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 	n0 += frame.nbox;
 	_frclean(f, ppt0, nn0, n0<f->nbox-1? n0+1 : n0);
 	
+	/*
+		At this point, we have given all textual boxes the correct size
+		through merging. However, newline boxes (and conceivably tabs?)
+		won't have the right heights. We need to fix this up.
+		
+		Claim (which I should assert) is that bxscan will have produced a set
+		of boxes (including conceivably newlines) that already are correct.
+		
+		A naive implementation could simply march forward over all boxes
+		and fix if up. This function is naive. However, it could provide a start
+		and end box number and point value to reduce total computation.
+	*/
+	// FIXME: Don't look at boxes that couldn't have possibly changed.
+	_frfixheights(f);
+	
 	// FIXME: Optimize by blitting the unaffected contents down rather than re-drawing.
 	// FIXME: We can start re-drawing on a target box instead of 0. (Need start corner)
 	// FIXME: Stop drawing at the box whose end is past the bottom of the rectangle.
-
 	draw(f->b, f->r, col, nil, ZP);
 	 _frdrawtext(f, f->r.min, f->cols[TEXT], col);
 	

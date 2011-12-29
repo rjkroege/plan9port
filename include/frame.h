@@ -97,7 +97,7 @@ void	_frclosebox(Frame*, int, int);
 int	_frcanfit(Frame*, Point, Frbox*);
 void	_frcklinewrap(Frame*, Point*, Frbox*);
 void	_frcklinewrap0(Frame*, Point*, Frbox*, int);
-void	_frcklinewrap1(Frame*, Point*, Frbox*);
+int	_frcklinewrap1(Frame*, Point*, Frbox*);
 void	_fradvance(Frame*, Point*, Frbox*);
 int	_frnewwid(Frame*, Point, Frbox*);
 int	_frnewwid0(Frame*, Point, Frbox*);
@@ -110,6 +110,7 @@ int	_frstrlen(Frame*, int);
 void	frtick(Frame*, Point, int);
 void	frinittick(Frame*);
 void _frresizetick(Frame*, int);
+void _frfixheights(Frame*);
 
 #define	NRUNE(b)	((b)->nrune<0? 1 : (b)->nrune)
 // FIXME: Every NBYTE usage is suspect.

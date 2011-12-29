@@ -44,16 +44,19 @@ _frcanfit(Frame *f, Point pt, Frbox *b)
 	In this version, we update the provided point such that it moves down
 	only on end of lines and otherwise, moves over to accomodate the
 	presence of tab characters.
+	
+	Returns true if we advanced to a following line.
 */
-void
+int
 _frcklinewrap1(Frame *f, Point *p, Frbox *b)
 {
+	p->x += b->wid;
 	if((b->nrune<0 ? b->minwid : b->wid) > f->r.max.x - p->x){
 		p->x = f->r.min.x;
 		p->y += b->height;
-	} else {
-		p->x += b->wid;
+		return 1;
 	}
+	return 0;
 }
 
 void
@@ -158,5 +161,38 @@ _frdiagdump(Frame *f)
 		else
 			print("\t[%d]: wid: %d\tminwid: %d\theight: %d\tascent: %d\tnrune: %d\n",
 				 i, b->wid, b->minwid, b->height, b->ascent, b->nrune);
+	}
+}
+
+
+/*
+	Fix up the heights and ascents of boxes so that they are correct
+	in the presence of tab boxes and newline boxes.
+*/
+void
+_frfixheights(Frame* f) 
+{
+	int sb = 0;			/* starting box on line */
+	int eb = 0;			/* ending box on line */
+	int b = 0;			/* current box on line */
+	
+	int h = 0;			/* computed height for this line's group of boxes. */
+	int a = 0;			/* computed ascent for this line's group of boxes. */
+	Point p =  f->r.min; 	/* box corner */
+
+	for (sb = eb = 0; eb < f->nbox; eb++) {
+		if ( _frcklinewrap1(f, &p, &f->box[eb])) {
+			for(b = sb; b <= eb; b++) {
+				h = _max(h, f->box[b].height);
+				a = _max(a, f->box[b].ascent);
+			}
+			for(b = sb; b <= eb; b++) {
+				f->box[b].height = h;
+				f->box[b].ascent = a;
+			}
+			sb = eb + 1;
+			h = 0;
+			a = 0;
+		}
 	}
 }
