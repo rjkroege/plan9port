@@ -144,12 +144,28 @@ frredraw(Frame *f)
 	pt = frdrawsel0(f, pt, f->p1, f->nchars, f->cols[BACK], f->cols[TEXT]);
 }
 
-static void
-_frtick(Frame *f, Point pt, int ticked)
+/*
+	This routine is for backwards compatibility.  It does not do
+	the right thing when called from outside.  You could preserve
+	the api or you could write a better/different routine.
+
+	The possibiity exists that there are many uses of this routine
+	in acme and so changing the routine to support them might be
+	desirable. (In fact, there are 7 so perhaps updating them all is
+	not particularly onerous.)
+	
+	So: this routine is deprecated as it does the wrong tihing.
+*/
+void
+frtick(Frame *f, Point pt, int ticked)
 {
+	print("frtick is DEPRECATED. Your cursor won't look right.\n");
 	frstick(f, pt, ticked, f->font->height);
 }
 
+/*
+	This is the new routine that code should use going forward.
+*/
 void
 frstick(Frame *f, Point pt, int ticked, int h) {
 	Rectangle r;

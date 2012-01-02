@@ -156,6 +156,8 @@ void boringFontifyBufferTest(StyleFrame*);
 void displayFontiffiedBufferTest(Image*, StyleFrame*, Point);
 void dumpTheStyleString(StyleFrame *);
 
+void tickupdate(Frame*, int /* ticked */);
+
 
 void
 threadmain(volatile int argc, char **volatile argv)
@@ -670,3 +672,17 @@ displayFontiffiedBufferTest(Image* dst, StyleFrame* sframe, Point p) {
 	}
 	srunestringn(dst, p, sframe->larger_buffer + o, i - o, sframe->tagstring + o, sframe->styledefns, 0);
 }
+
+/*
+	Helper routine tor managing the tick.
+*/
+void
+tickupdate(Frame* f, int ticked) {
+	Point p;
+	int h;
+	if (f->p0 == f->p1) {
+		p = _frsptofcharh(f, f->p0, &h);
+		frstick(f, p, ticked, h);
+	}
+}
+
