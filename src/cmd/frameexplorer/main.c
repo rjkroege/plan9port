@@ -300,15 +300,18 @@ keyboardthread(void *v)
 			
 			switch (r) {
 			case 8: /*Backspace */
-				if (sframe.lastr > 0) {
-					print("sframe.lastr %d\n", sframe.lastr);
+				if (sframe.point > 0) {
+					print("sframe.point %d\n", sframe.point);
+					memmove(sframe.larger_buffer + sframe.point - 1,
+							sframe.larger_buffer + sframe.point,
+							sframe.lastr - sframe.point + 1);	
 					sframe.larger_buffer[sframe.lastr] = 0;
 					sframe.lastr--;
 					sframe.point--;
 					
 					reFontify(&sframe);
 
-					frdelete(f, sframe.lastr - sframe.forg, sframe.lastr - sframe.forg + 1);
+					frdelete(f, sframe.point - sframe.forg, sframe.point - sframe.forg + 1);
 					if (f->nlines < 3 && sframe.forg > 0) {
 						print("inside scrolling code\n");
 						// iNB maxlines varies with content. this might cause all
@@ -444,7 +447,6 @@ insertCharacter(StyleFrame* sframe, Rune r)
 void
 mousethread(void *v)
 {
-
 	Mouse m;
 	enum { MResize, MMouse, NMALT };
 	static Alt alts[NMALT+1];
