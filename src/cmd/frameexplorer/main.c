@@ -304,7 +304,7 @@ keyboardthread(void *v)
 					print("sframe.point %d\n", sframe.point);
 					memmove(sframe.larger_buffer + sframe.point - 1,
 							sframe.larger_buffer + sframe.point,
-							sframe.lastr - sframe.point + 1);	
+							(sframe.lastr - sframe.point + 1) *  sizeof(Rune));	
 					sframe.larger_buffer[sframe.lastr] = 0;
 					sframe.lastr--;
 					sframe.point--;
@@ -414,10 +414,12 @@ insertCharacter(StyleFrame* sframe, Rune r)
 	// And insert characters there.
 
 	// Make room for more, have enough space already.
-	if (sframe->point != sframe->lastr) {
+	if (sframe->point < sframe->lastr) {
+		print("main.c: inserting character %d %d %d\n", sframe->point + 1, sframe->point, sframe->lastr - sframe->point);
 		memmove(sframe->larger_buffer + sframe->point + 1,
 				sframe->larger_buffer + sframe->point,
-				sframe->lastr - sframe->point);
+				(sframe->lastr - sframe->point) * sizeof(Rune));
+		// Don't need to do styles because we re-fontify below.
 	}
 
 	sframe->larger_buffer[sframe->point] = r;
