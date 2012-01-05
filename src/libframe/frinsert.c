@@ -431,7 +431,11 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 		ppt0.x -= f->box[nn0].wid;
 	}
 	n0 += frame.nbox;
+	print("\nPre-cleaning\n");
+	_frdiagdump(f);
 	_frclean(f, ppt0, nn0, n0<f->nbox-1? n0+1 : n0);
+	print("\nPost-cleaning\n");
+	_frdiagdump(f);
 	
 	/*
 		At this point, we have given all textual boxes the correct size

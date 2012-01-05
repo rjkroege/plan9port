@@ -29,36 +29,6 @@ _frcanfit(Frame *f, Point pt, Frbox *b)
 	return 0;
 }
 
-/*
-	The presumption in the original code is that this
-	determination happens at the start of the actual text line.
-	But this moves us down too far.  So, we treat newline boxes as
-	being at the end of lines and wrap then.
-
-	FIXME: note that the change in the ordering assumption of the
-	use of _frcklinewrap may cause bugs elsewhere in the code.
-
-	FIXME: refactor the original function _frcklinewrap0 to be like this
-	one.
-	
-	In this version, we update the provided point such that it moves down
-	only on end of lines and otherwise, moves over to accomodate the
-	presence of tab characters.
-	
-	Returns true if we advanced to a following line.
-*/
-int
-_frcklinewrap1(Frame *f, Point *p, Frbox *b)
-{
-	p->x += b->wid;
-	if((b->nrune<0 ? b->minwid : b->wid) > f->r.max.x - p->x){
-		p->x = f->r.min.x;
-		p->y += b->height;
-		return 1;
-	}
-	return 0;
-}
-
 void
 _frcklinewrap(Frame *f, Point *p, Frbox *b)
 {
@@ -86,14 +56,16 @@ _frcklinewrap0(Frame *f, Point *p, Frbox *b, int h)
 	}
 }
 
-void
+int
 _fradvance(Frame *f, Point *p, Frbox *b)
 {
 	if(b->nrune<0 && b->bc=='\n'){
 		p->x = f->r.min.x;
 		p->y += b->height;
+		return 1;
 	}else
 		p->x += b->wid;
+	return 0;
 }
 
 int
@@ -180,11 +152,8 @@ _frfixheights(Frame* f)
 	Point p =  f->r.min; 	/* box corner */
 
 	for (sb = eb = 0; eb < f->nbox; eb++) {
-		if ( _frcklinewrap1(f, &p, &f->box[eb])) {
-			f->box[eb].height = 0;
-			f->box[eb].ascent = 0;
-
-			for(b = sb; b <= eb; b++) {
+		if ( _fradvance(f, &p, &f->box[eb])) {
+			for(b = sb; b < eb; b++) {
 				h = _max(h, f->box[b].height);
 				a = _max(a, f->box[b].ascent);
 			}
