@@ -140,6 +140,14 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		ppt0.x -= f->box[nn0].wid;
 	}
 	_frclean(f, ppt0, nn0, n0<f->nbox-1? n0+1 : n0);
+
+	/*
+		See longer comment in frinsert immediately preceeding this call.
+		FIXME: Assorted optimizations.
+	*/		
+	print("\nEnd of deletion, prior to  to _frfixheights\n");
+	_frdiagdump(f);
+	_frfixheights(f);
 	
 	print("\nEnd of deletion, immediately before drawing\n");
 	_frdiagdump(f);

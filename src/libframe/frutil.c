@@ -181,6 +181,9 @@ _frfixheights(Frame* f)
 
 	for (sb = eb = 0; eb < f->nbox; eb++) {
 		if ( _frcklinewrap1(f, &p, &f->box[eb])) {
+			f->box[eb].height = 0;
+			f->box[eb].ascent = 0;
+
 			for(b = sb; b <= eb; b++) {
 				h = _max(h, f->box[b].height);
 				a = _max(a, f->box[b].ascent);
