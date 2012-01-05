@@ -611,7 +611,7 @@ boringFontifyBufferTest(StyleFrame* sframe) {
 		r = sframe->larger_buffer[i];		
 		switch (state) {
 		case fSTART:
-			if (r == ' ' || r == '\t' )
+			if (r == ' ' || r == '\t'  || r == '\n')
 				state = fDEF;
 			else if (r == '/' && i + 1 < sframe->lastr && sframe->larger_buffer[i+1] == '/')
 				state = fCOMMENT;
