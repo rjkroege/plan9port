@@ -18,14 +18,15 @@ void
 _frdrawtext(Frame *f, Point pt, Image *text, Image *back)
 {
 	Frbox *b;
-	int nb;
+	int nb, height;	/* height is the height of the box before b. */
 
-	for(nb=0,b=f->box; nb<f->nbox; nb++, b++){
-		print("frdraw.c:/^_frdrawtext/  pt: %d %d\n",  pt.x, pt.y);
+	for(height = 0, nb=0,b=f->box; nb<f->nbox; nb++, b++){
+		print("_frdrawtext[%d]\tpt: %d %d  h:%d \n",  nb, pt.x, pt.y, height);
+		_frlinewrappoint(f, &pt, b, &height);
+		print("\t\t\tpt: %d %d h: %d\n",  pt.x, pt.y, height);
 		if(!f->noredraw && b->nrune >= 0)
 			srunestringn(f->b, pt, b->ptr, b->nrune, b->ptags, f->styles, b->ascent);
-		_fradvance(f, &pt, b);
-		print("end of _frdrawtext loop after wrapping: frdraw.c:/^_frdrawtext/  pt: %d %d\n",  pt.x, pt.y);
+		pt.x += b->wid;
 	}
 }
 
