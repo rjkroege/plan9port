@@ -262,7 +262,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 	// FIXME: refactoring opportunities abound.
 	if(f->p0 == f->p1) {
 		int b0 = 0;
-		Point pt = _frsptofchar(f, f->p0, &b0);
+		Point pt = _frsptofchar(f, f->p0, &b0, 0);
 		// FIXME: we already have the box num right.
 		// we even already have the right height?
 		print("n0 == b0?: %d, %d\n", n0, b0);
@@ -469,8 +469,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 		f->p1 = f->nchars;
 	if(f->p0 == f->p1) {
 		int b = 0; 
-		// FIXME: Bug in _frsptofchar?
-		Point pt = _frsptofchar(f, f->p0, &b);
+		Point pt = _frsptofchar(f, f->p0, &b, 0);
 		print("pre-frstick: b %d pt.x %d pt.y %d\n", b, pt.x, pt.y);
 		frstick(f, pt, 1, f->box[b].height);
 	}

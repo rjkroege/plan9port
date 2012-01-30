@@ -4,8 +4,17 @@
 #include <mouse.h>
 #include <frame.h>
 
+/*
+	Height is the height of the line before the line containing boxnum
+	or 0. As per comment on _frlinewrappoint.
+	
+	Computes the point of a particular character. Return the box containing
+	the character in boxnum so that callers can determine the height of the
+	box containing p.
+*/
+static
 Point
-_frptofcharptb(Frame *f, ulong p, Point pt, int* boxnum)
+_frptofcharptb(Frame *f, ulong p, Point pt, int* boxnum, int pheight)
 {
 	Rune *s;
 	Frbox *b;
@@ -13,14 +22,14 @@ _frptofcharptb(Frame *f, ulong p, Point pt, int* boxnum)
 	STag* t;
 	
 	bn = *boxnum;
+	
+	// FIXME: you have a bug in here. You will want to replace use of
+	// _frcklinewrap
 
 	for(b = &f->box[bn]; bn<f->nbox; bn++,b++){
-		_frcklinewrap(f, &pt, b);
+		_frlinewrappoint(f, &pt, b, &pheight);
 		if(p < (l=NRUNE(b))){
 			if(b->nrune > 0)
-				// FIXME: could simplify?
-				// FIXME: is this right? It would seem we're not advancing
-				// the style string...
 				for(s=b->ptr, t = b->ptags; p>0; s++, p--, t++){
 					pt.x += srunestringnwidth(s, 1, t, f->styles);
 					if(pt.x>f->r.max.x)
@@ -39,13 +48,13 @@ Point
 frptofchar(Frame *f, ulong p)
 {
 	int n = 0;
-	return _frptofcharptb(f, p, f->r.min, &n);
+	return _frptofcharptb(f, p, f->r.min, &n, 0);
 }
 
 Point
-_frsptofchar(Frame *f, ulong p, int* box)
+_frsptofchar(Frame *f, ulong p, int* box, int pheight)
 {
-	return _frptofcharptb(f, p, f->r.min, box);
+	return _frptofcharptb(f, p, f->r.min, box, pheight);
 }
 
 // FIXME: Handle the situation of interest with out the _fradvance
@@ -54,7 +63,7 @@ Point
 _frsptofcharh(Frame *f, ulong p, int* height)
 {
 	int b = 0;
-	Point pt = _frptofcharptb(f, p, f->r.min, &b);
+	Point pt = _frptofcharptb(f, p, f->r.min, &b, 0);
 	*height = 	(b >= 0) ? f->box[b].height : 0;
 	return pt;
 }
@@ -68,11 +77,14 @@ _frptofcharnb(Frame *f, ulong p, int nb)	/* doesn't do final _fradvance to next 
 
 	nbox = f->nbox;
 	f->nbox = nb;
-	pt = _frptofcharptb(f, p, f->r.min, &boxn);
+	pt = _frptofcharptb(f, p, f->r.min, &boxn, 0);
 	f->nbox = nbox;
 	return pt;
 }
 
+/*
+	FIXME: Use of this is wrong. Suspect. Foolish.
+*/
 static
 Point
 _frgrid(Frame *f, Point p)

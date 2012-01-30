@@ -74,8 +74,6 @@ _frcklinewrap0(Frame *f, Point *p, Frbox *b, int h)
 int
 _frlinewrappoint(Frame *f, Point *p, Frbox *b, int* height)
 {
-	
-
 	if((b->nrune<0 ? b->minwid : b->wid) > f->r.max.x - p->x) {
 		p->x = f->r.min.x;
 		p->y += *height;

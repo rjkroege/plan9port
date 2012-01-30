@@ -38,6 +38,9 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		drawerror(f->display, "off end in frdelete");
 	n1 = _frfindbox(f, n0, p0, p1);
 
+	print("\Start of deletion, after chopping the text up\n");
+	_frdiagdump(f);
+
 	pt0 = _frptofcharnb(f, p0, n0);
 	pt1 = frptofchar(f, p1);
 
@@ -45,7 +48,7 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		// FIXME: refactor. We could avoid doing some of this.
 		// FIXME: in particular, there ought to be no reason to compute the point again.
 		int b = 0; 
-		Point pt = _frsptofchar(f, f->p0, &b);
+		Point pt = _frsptofchar(f, f->p0, &b, 0);
 		print("box from _frsptofchar %d\n", b);
 		// frstick(f, pt, 0, (b >= 0) ? f->box[b].height : 0);
 		frstick(f, pt, 0, h0);
@@ -69,6 +72,7 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		print("frdelete: while loop\n");
 		_frcklinewrap0(f, &pt0, b, b->height); // FIXME: suspect height
 		_frcklinewrap(f, &pt1, b);
+		// FIXME: opportunity to not re-compute sizes?
 		n = _frcanfit(f, pt0, b);
 		if(n==0)
 			drawerror(f->display, "_frcanfit==0");
@@ -111,11 +115,11 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		frsselectpaint(f, pt0, pt1, f->cols[BACK], h0, h1);
 	if(pt1.y != pt0.y){
 		Point pt2;
-		int tmpbn = n1;
+		// int tmpbn = n1;  // superfluous
 
 		print("frdeleete: the if A\n");		
-		// FIXME: this might need to be fixed.
-		pt2 = _frptofcharptb(f, 32767, pt1, &tmpbn);
+		// FIXME: There is an optimization possible here?
+		pt2 = frptofchar(f, 32767);
 		if(pt2.y > f->r.max.y)
 			drawerror(f->display, "frptofchar in frdelete");
 		if(n1 < f->nbox){
@@ -139,6 +143,9 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		--nn0;
 		ppt0.x -= f->box[nn0].wid;
 	}
+	
+	print("\nEnd of deletion, prior to  to _frclean\n");
+	_frdiagdump(f);
 	_frclean(f, ppt0, nn0, n0<f->nbox-1? n0+1 : n0);
 
 	/*
@@ -171,7 +178,7 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		// here, we re-measure because we've cleaned above.
 		// NB: there would appear to be assorted bugs with this.
 		int b = 0; 
-		Point pt = _frsptofchar(f, f->p0, &b);
+		Point pt = _frsptofchar(f, f->p0, &b, 0);
 		frstick(f, pt, 1, (b >= 0) ? f->box[b].height : 0);
 	}
 	pt0 = frptofchar(f, f->nchars);
