@@ -57,7 +57,8 @@ void	mousethread(void*);
 void	keyboardthread(void*);
 
 // Control logging
-int dumpLotsOfFontificationLogging = 0;
+int dumpLotsOfFontificationLogging = 1;
+int INSERT_LOGGING = 1;
 
 /*
 	Goals
@@ -154,7 +155,7 @@ StyleFrame sframe;
 // Additional test functions.
 void boringFontifyBufferTest(StyleFrame*);
 void displayFontiffiedBufferTest(Image*, StyleFrame*, Point);
-void dumpTheStyleString(StyleFrame *);
+void dumpTheStyleString(StyleFrame *, int, int);
 
 void tickupdate(Frame*, int /* ticked */);
 
@@ -304,12 +305,14 @@ keyboardthread(void *v)
 					print("sframe.point %d\n", sframe.point);
 					memmove(sframe.larger_buffer + sframe.point - 1,
 							sframe.larger_buffer + sframe.point,
-							(sframe.lastr - sframe.point + 1) *  sizeof(Rune));	
+							(sframe.lastr - sframe.point + 1) *  sizeof(Rune));
+					memmove(sframe.tagstring + sframe.point - 1,
+							sframe.tagstring + sframe.point,
+							(sframe.lastr - sframe.point + 1) *  sizeof(STag));
 					sframe.larger_buffer[sframe.lastr] = 0;
+					sframe.tagstring[sframe.lastr] = 0;
 					sframe.lastr--;
 					sframe.point--;
-					
-					reFontify(&sframe);
 
 					frdelete(f, sframe.point - sframe.forg, sframe.point - sframe.forg + 1);
 					if (f->nlines < 3 && sframe.forg > 0) {
@@ -334,6 +337,7 @@ keyboardthread(void *v)
 							sframe.forg++;
 						}
 					}
+					reFontify(&sframe);
 				}
 				break;
 			case 0x10: /* ^P  */
@@ -376,20 +380,78 @@ keyboardthread(void *v)
 	}
 }
 
+/*
+	For each character in the STag, update the sframe for
+	spans that differ.
+*/
+void
+generateAndInjectSpans(StyleFrame* sf, STag* before, STag* after)
+{
+	unsigned i, o;
+	Frame *f = &sf->frame;
+	ulong p0, p1;
+	
+	p0 = f->p0;
+	p1 = f->p1;
+
+	/* This can conceivably inject text outside of the visible. */
+	for (i = 0, o = 0; i < sf->lastr; i++, before++, after++) {
+		 if (*before == *after && o != i) {
+		 	/* FIXME: consider extracting this into a useful utility routine. */
+		 	print("generateAndInjectSpans: %d %d <", o, i);
+		 	dumpTheStyleString(sf, o, i);
+		 	print(">\n");
+			frdelete(f, o - sf->forg, i - sf->forg);
+			frsinsert(f, sf->larger_buffer + o,
+					 sf->larger_buffer + i ,
+					 sf->tagstring + o,
+					 o - sf->forg);
+			o = i + 1;
+		} else if (*before == *after && o == i) {
+			o++;		
+		}
+	}
+
+	if (o < i) { /* Hande the case where before != after all the way to the end. */
+	 	print("generateAndInjectSpans, end: %d %d <", o, i);
+	 	dumpTheStyleString(sf, o, i);
+	 	print(">\n");
+		frdelete(f, o - sf->forg, i - sf->forg);
+		frsinsert(f, sf->larger_buffer + o,
+				 sf->larger_buffer + i ,
+				 sf->tagstring + o,
+				 o - sf->forg);
+	}
+	
+	tickupdate(f, 0);
+	f->p0 = p0;
+	f->p1 = p0;
+	tickupdate(f, 1);
+}
+
 void
 reFontify(StyleFrame* sframe)
 {
+	STag* original;
+	
 	if (dumpLotsOfFontificationLogging) {
 		print("\n\nbefore\n----\n");
-		dumpTheStyleString(sframe);
+		dumpTheStyleString(sframe, 0, sframe->lastr);
+		print("\n");
 	}
-	boringFontifyBufferTest(sframe);
+
+	original = (STag*)malloc(sizeof(STag) * sframe->lastr);
+	memcpy(original, sframe->tagstring, sizeof(STag) * sframe->lastr);
+	
+	boringFontifyBufferTest(sframe);	/* Actually fontify */
 	if (dumpLotsOfFontificationLogging) {
 		print("\nafter\n----\n");
-		dumpTheStyleString(sframe);
+		dumpTheStyleString(sframe, 0, sframe->lastr);
+		print("\n");
 	}
-}
-
+	generateAndInjectSpans(sframe, original, sframe->tagstring);
+	free(original);
+}	
 
 /*
 	Insert a Rune r into the specifies sframe.  r must be an
@@ -415,11 +477,15 @@ insertCharacter(StyleFrame* sframe, Rune r)
 
 	// Make room for more, have enough space already.
 	if (sframe->point < sframe->lastr) {
-		print("main.c: inserting character %d %d %d\n", sframe->point + 1, sframe->point, sframe->lastr - sframe->point);
+		INSERT_LOGGING && print("main.c: inserting character %d %d %d\n",
+					sframe->point + 1, sframe->point, sframe->lastr - sframe->point);
 		memmove(sframe->larger_buffer + sframe->point + 1,
 				sframe->larger_buffer + sframe->point,
 				(sframe->lastr - sframe->point) * sizeof(Rune));
-		// Don't need to do styles because we re-fontify below.
+		memmove(sframe->tagstring + sframe->point + 1,
+				sframe->tagstring + sframe->point,
+				(sframe->lastr - sframe->point) * sizeof(STag));
+
 	}
 
 	sframe->larger_buffer[sframe->point] = r;
@@ -434,13 +500,24 @@ insertCharacter(StyleFrame* sframe, Rune r)
 	// Fontify the buffer here.
 	sframe->lastr++;
 	sframe->point++;
-	reFontify(sframe); 
-	// FIXME: need to adjust the inserted content based on what's changed while re-fontifying.
-	// Observation: considerable room for optimization exists here.
 
 	frsinsert(f, sframe->larger_buffer + sframe->point -1,
 			sframe->larger_buffer + sframe->point, sframe->tagstring + sframe->point - 1,
 			sframe->point - 1 - sframe->forg);
+
+	/*
+		FIXME: we insert twice.  We could fix this in the
+		following way that is worth noting for the integration
+		with acme proper: insert new characters into the
+		buffer with an invalid STag.  Then run the fonter.
+		The updated font string will be valid, hence
+		different.  I will have to think about this more in
+		the integration phase.
+		
+		This scheme doesn't really work for delete. Perhaps
+		there is a better alternative.
+	*/
+	reFontify(sframe);  /* Inserts happen twice. */
 
 	tp = frptofchar(f, sframe->frame.p1);
 	print("point of char %d: (%d, %d)\n", sframe->frame.p1, tp.x, tp.y);
@@ -585,14 +662,26 @@ enum {
 
 // This routine is useful. I might want to preserve it for posterity.
 void
-dumpTheStyleString(StyleFrame *sframe)
+dumpTheStyleString(StyleFrame *sframe, int s, int e)
 {
 	int i;
 	
-	for (i = 0;  i < sframe->lastr; i++) {
-		print("%c%c", " *@"[sframe->tagstring[i]], sframe->larger_buffer[i]);
+	for (i = s;  i < e; i++) {
+		print("%c%c", " !@"[sframe->tagstring[i]], sframe->larger_buffer[i]);
 	}				
 }
+
+// FIXME: re-write this to do two things:
+// change styles of things included in * characters. 
+// upload complete re-styled string. (Will exercise more code paths)
+
+// theoretically... inserting one or many characters ought to be the same
+// it would be much more convenient to insert one character at a time
+// but I suspect that I will find new interesting bugs if I remove or insert blocks.
+/*
+	it's more work... but re-finding the spans is probably the right way to proceed.
+	I can do this externally. without modifying this code.
+*/
 
 void
 boringFontifyBufferTest(StyleFrame* sframe) {
@@ -602,16 +691,15 @@ boringFontifyBufferTest(StyleFrame* sframe) {
 	// other words alternate between keyword and default
 	// print("boringFontifyBufferTest\n");
 
-	// this code is crap.
-
 	int state = fDEF, i, o;
 	Rune r;
-
+	
+	setstagsforrunerange(sframe->tagstring, DEFAULTSTYLE, sframe->lastr);
 	for (i = 0, o = 0 ; i <	sframe->lastr; i++) {
 		r = sframe->larger_buffer[i];		
 		switch (state) {
 		case fSTART:
-			if (r == ' ' || r == '\t'  || r == '\n')
+			if (r == '*')
 				state = fDEF;
 			else if (r == '/' && i + 1 < sframe->lastr && sframe->larger_buffer[i+1] == '/')
 				state = fCOMMENT;
@@ -623,11 +711,7 @@ boringFontifyBufferTest(StyleFrame* sframe) {
 				setstagsforrunerange(sframe->tagstring + o, DEFAULTSTYLE, i - o);
 				state = fCOMMENT;
 				o = i;
-			} else if (r == '\n') {
-				setstagsforrunerange(sframe->tagstring + o, DEFAULTSTYLE, i - o);
-				o = i + 1;
-				state = fDEF;
-			} else if (r == ' ' || r == '\t') {
+			} else if (r == '*') {
 				state = fSTART;
 				o = i;
 			}
@@ -679,6 +763,8 @@ displayFontiffiedBufferTest(Image* dst, StyleFrame* sframe, Point p) {
 
 /*
 	Helper routine tor managing the tick.
+	FIXME: This uses a private API. Which suggests that the API needs adjustment
+	for a styled frame.
 */
 void
 tickupdate(Frame* f, int ticked) {
