@@ -193,7 +193,9 @@ threadmain(int argc, char *argv[])
 	cedit = chancreate(sizeof(int), 0);
 	cexit = chancreate(sizeof(int), 0);
 	cwarn = chancreate(sizeof(void*), 1);
-	if(cwait==nil || ccommand==nil || ckill==nil || cxfidalloc==nil || cxfidfree==nil || cerr==nil || cexit==nil || cwarn==nil){
+	cdelegates = chancreate(sizeof(Delegate*), 1); // Don't know how big to make it.
+	if(cwait==nil || ccommand==nil || ckill==nil || cxfidalloc==nil || cxfidfree==nil || cerr==nil || cexit==nil || cwarn==nil
+			|| cdelegates == nil){
 		fprint(2, "acme: can't create initial channels: %r\n");
 		threadexitsall("channels");
 	}
@@ -206,6 +208,7 @@ threadmain(int argc, char *argv[])
 	chansetname(cedit, "cedit");
 	chansetname(cexit, "cexit");
 	chansetname(cwarn, "cwarn");
+	chansetname(cdelegates, "cdelegates");
 
 	mousectl = initmouse(nil, screen);
 	if(mousectl == nil){
@@ -515,7 +518,7 @@ mousethread(void *v)
 	Plumbmsg *pm;
 	Mouse m;
 	char *act;
-	enum { MResize, MMouse, MPlumb, MWarnings, NMALT };
+	enum { MResize, MMouse, MPlumb, MWarnings, MDelegates, NMALT };
 	static Alt alts[NMALT+1];
 
 	USED(v);
@@ -534,6 +537,9 @@ mousethread(void *v)
 	alts[MWarnings].op = CHANRCV;
 	if(cplumb == nil)
 		alts[MPlumb].op = CHANNOP;
+	alts[MDelegates].c = cdelegates;
+	alts[MDelegates].v = nil;
+	alts[MDelegates].op = CHANRCV;
 	alts[NMALT].op = CHANEND;
 
 	for(;;){
@@ -561,6 +567,9 @@ mousethread(void *v)
 			plumbfree(pm);
 			break;
 		case MWarnings:
+			break;
+		case MDelegates:
+			print("Received a message on the delegate channel\n");
 			break;
 		case MMouse:
 			/*

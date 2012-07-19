@@ -39,6 +39,7 @@ typedef	struct	Block Block;
 typedef	struct	Buffer Buffer;
 typedef	struct	Command Command;
 typedef	struct	Column Column;
+typedef	struct	Delegate Delegate;
 typedef	struct	Dirlist Dirlist;
 typedef	struct	Dirtab Dirtab;
 typedef	struct	Disk Disk;
@@ -468,6 +469,12 @@ struct Expand
 	int	a1;
 };
 
+struct Delegate
+{
+	Rune	*r;		/* The edit command string to execute. */
+	Channel	*ack;		/* A channel to completion ack on. */
+};
+
 enum
 {
 	/* fbufalloc() guarantees room off end of BUFSIZE */
@@ -579,6 +586,7 @@ Channel	*cexit;		/* chan(int) */
 Channel	*cerr;		/* chan(char*) */
 Channel	*cedit;		/* chan(int) */
 Channel	*cwarn;		/* chan(void*)[1] (really chan(unit)[1]) */
+Channel	*cdelegates;	/* chan(Delegate*)[?]  */
 
 QLock	editoutlk;
 
