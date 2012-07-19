@@ -19,7 +19,7 @@
 #import <WebKit/WebKit.h>
 #import <WebKit/DOMRange.h>
 
-#import "WebViewExtra.h"
+#import "webviewextra.h"
 
 #undef Cursor
 #undef Point

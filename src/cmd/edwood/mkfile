@@ -14,7 +14,6 @@ WSYSOFILES=\
 	cocoa-screen-objc.o \
 	cocoa-srv.o \
 	cocoa-thread.o \
-	appwin-objc.o \
 	appdelegate-objc.o \
 	chordingwindow-objc.o \
 	transitiondictionary-objc.o \
