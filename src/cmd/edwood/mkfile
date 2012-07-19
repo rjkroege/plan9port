@@ -1,0 +1,50 @@
+<$PLAN9/src/mkhdr
+<|osxvers
+
+TARG=edwood
+
+# In theory, this is right.
+# Remove the superfluous stuff.
+WSYSOFILES=\
+	edwood.$O\
+	latin1.$O\
+	mouseswap.$O\
+	winsize.$O\
+	osx-draw.o \
+	cocoa-screen-objc.o \
+	cocoa-srv.o \
+	cocoa-thread.o \
+	appwin-objc.o \
+	appdelegate-objc.o
+
+#	contentview-objc.o
+
+
+# <|sh ./mkwsysrules.sh
+
+OFILES=$WSYSOFILES
+
+HFILES=\
+	edwood.h\
+
+<$PLAN9/src/mkone
+
+$O.mklatinkbd: mklatinkbd.$O
+	$LD -o $target $prereq
+
+latin1.$O: latin1.h
+
+latin1.h: $PLAN9/lib/keyboard $O.mklatinkbd
+	./$O.mklatinkbd -r $PLAN9/lib/keyboard | sed 's/, }/ }/' >$target
+
+# Note how we need to add the -objc suffix to .m files.
+%-objc.$O: %.m
+	$CC $CFLAGS -o $target $stem.m
+
+CLEANFILES=$O.macargv $O.mklatinkbd latin1.h
+
+install: mklatinkbd.install
+install:Q: 
+	if [ $MACARGV ]; then
+		mk $MKFLAGS macargv.install
+	fi

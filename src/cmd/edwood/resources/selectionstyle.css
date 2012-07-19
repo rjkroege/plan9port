@@ -1,0 +1,9 @@
+/*  this is how we adjust the selection color based on the button */
+/*  So edit this style on the fly to create a custom selection color */
+/*
+ FOOO
+*/
+
+::selection {
+  background-color: #ffff00;
+}
