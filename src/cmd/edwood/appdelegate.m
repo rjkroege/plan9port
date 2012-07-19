@@ -19,6 +19,8 @@
 #import <WebKit/WebKit.h>
 #import <WebKit/DOMRange.h>
 
+#import "WebViewExtra.h"
+
 #undef Cursor
 #undef Point
 #undef Rect
@@ -231,15 +233,42 @@ enum
     NSLog(@"delegate: postRu\n"); 
     [contentview stringByEvaluatingJavaScriptFromString: @"greenstyle.disabled = true;"];
     // Retrieve selection
-    DOMRange* middleselection = [contentview selectedDOMRange];
+    DOMRange* rightselection = [contentview selectedDOMRange];
     // FIXME: I need to know which window this is in.
     // FIXME: I need to refactor this for middle and right
     // FIXME: I need to make the click use the existing selection.
-    NSLog(@"FIXME: do something with right selection: <<%@>>\n", [middleselection text]);
-    // Replace selection with previous selection.
-    [contentview setSelectedDOMRange: m_leftselection affinity: m_selectionaffinity];
-    //[m_leftselection release];
+    NSLog(@"FIXME: do something with right selection: <<%@>>\n", [rightselection text]);
+
+    NSLog(@"hypothesis: a click should make a collapsed range?\n");
+    // what does acme do when i right click on a non-selection?
+    NSString* searchtarget = nil;
+    DOMRange* startrange = nil;
+    if (rightselection.collapsed) {
+        NSLog(@"    >> collapsed\n");
+        // maybe we have clicked on a selection.
+        int sr = [m_leftselection compareBoundaryPoints: DOM_START_TO_START sourceRange: rightselection];
+        int er = [m_leftselection compareBoundaryPoints: DOM_END_TO_END sourceRange: rightselection];
+        NSLog(@"    >> sr: %d er %d\n", sr, er);
+        if ((sr == -1 || sr == 0) && (er == 0 || er == 1)) {
+            searchtarget = [m_leftselection text];
+            startrange = m_leftselection;
+        }
+    } else {
+        searchtarget = [rightselection text];
+        startrange = rightselection;
+    }
+    NSLog(@"searchtarget %@\n", searchtarget);
+
+    /* This implementation depends on a newer version of WebKit. */
+    if (searchtarget) {
+        DOMRange* newrange = [contentview DOMRangeOfString: searchtarget relativeTo: startrange options: WebFindOptionsWrapAround];
+        [contentview setSelectedDOMRange: newrange affinity: m_selectionaffinity];
+        // FIXME: warp cursor to a position just inside the range.
+    } else {
+        [contentview setSelectedDOMRange: m_leftselection affinity: m_selectionaffinity];
+    }
 }
+
 - (void) preLd { NSLog(@"delegate: preLd\n"); }
 
 - (void) preMd {
