@@ -17,11 +17,13 @@
 
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
+#import <WebKit/DOMRange.h>
 
 #undef Cursor
 #undef Point
 #undef Rect
 
+#include "eventaugmentation.h"
 #include "appdelegate.h"
 #include "graphedge.h"
 #include "chordingwindow.h"
@@ -195,6 +197,74 @@ enum
 + (void)calldrawimg:(NSValue*)v{ drawimg([v rectValue], [NSApp mainWindow]);}
 + (void)callmakewin:(NSValue*)v{ makewin([v pointerValue]);}
 + (void)callsetcursor0:(NSValue*)v{ setcursor0([v pointerValue]);}
+
+- (void) postLdMd {
+    NSLog(@"delegate: postLdMd\n");
+    [contentview cut: self];
+}
+
+- (void) postLdRd {
+    NSLog(@"delegate: postLdRd\n");
+    [contentview paste: self];
+}
+
+- (void) postMdLd { NSLog(@"delegate: postMdLd\n"); }
+- (void) postMdRd { NSLog(@"delegate: postMdRd\n"); }
+
+- (void) postMu
+{
+    NSLog(@"delegate: postMu\n");
+    [contentview stringByEvaluatingJavaScriptFromString: @"redstyle.disabled = true;"];
+    // Retrieve selection
+    DOMRange* middleselection = [contentview selectedDOMRange];
+    // FIXME: I need to know which window this is in.
+    NSLog(@"FIXME: do something with middle selection: <<%@>>\n", [middleselection text]);
+    // Replace selection with previous selection.
+    [contentview setSelectedDOMRange: m_leftselection affinity: m_selectionaffinity];
+    //[m_leftselection release];
+}
+
+- (void) postRdLd { NSLog(@"delegate: postRdLd\n"); }
+- (void) postRdMd { NSLog(@"delegate: postRdMd\n"); }
+
+- (void) postRu {
+    NSLog(@"delegate: postRu\n"); 
+    [contentview stringByEvaluatingJavaScriptFromString: @"greenstyle.disabled = true;"];
+    // Retrieve selection
+    DOMRange* middleselection = [contentview selectedDOMRange];
+    // FIXME: I need to know which window this is in.
+    // FIXME: I need to refactor this for middle and right
+    // FIXME: I need to make the click use the existing selection.
+    NSLog(@"FIXME: do something with right selection: <<%@>>\n", [middleselection text]);
+    // Replace selection with previous selection.
+    [contentview setSelectedDOMRange: m_leftselection affinity: m_selectionaffinity];
+    //[m_leftselection release];
+}
+- (void) preLd { NSLog(@"delegate: preLd\n"); }
+
+- (void) preMd {
+    NSLog(@"delegate: preMd\n");
+
+   // Let's proceed in stages.
+    // 1. learn / note how to do the task in JS
+    // 2. learn / note how to the task from Objective C
+    [m_leftselection autorelease];
+    m_leftselection = [[contentview selectedDOMRange] retain];
+    m_selectionaffinity = [contentview selectionAffinity];
+    [contentview stringByEvaluatingJavaScriptFromString: @"redstyle.disabled = false;"];
+}
+
+- (void) preRd {
+    NSLog(@"delegate: preRd\n");
+   [m_leftselection autorelease];
+    m_leftselection = [[contentview selectedDOMRange] retain];
+    m_selectionaffinity = [contentview selectionAffinity];
+    [contentview stringByEvaluatingJavaScriptFromString: @"greenstyle.disabled = false;"];
+}
+
+// FIXME: Need a dealloc function.
+
+
 @end // AppDelegate
 
 static uint
@@ -304,7 +374,7 @@ static void
 makewin(char *s)
 {
 	NSRect r, sr;
-	NSWindow *w;
+	ChordingWindow *w;
 	Rectangle wr;
 	int set;
 	WebView* myview;
@@ -346,6 +416,7 @@ makewin(char *s)
 	// Can I use property access on apple's classes?
 	[w setAcceptsMouseMovedEvents:YES];
 	[w setDelegate:delegate];
+	[w setEventDelegate: delegate];
 	[w setDisplaysWhenScreenProfileChanges:NO];
 
 	// win.isofs = 0;
@@ -355,6 +426,7 @@ makewin(char *s)
 	delegate.contentview = myview; // Property setter...
 	[w setContentView:myview];
 	[w makeKeyAndOrderFront:nil];
+	[w makeFirstResponder: myview];
 }
 
 
@@ -502,3 +574,4 @@ makeicon(void)
 	[d release];
 }
 #endif
+

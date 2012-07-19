@@ -5,11 +5,11 @@
 
 @implementation GraphEdge
 
-- (NSString *)preHandler {
+- (SEL)preHandler {
 	return m_prehandler;
 }
 
-- (NSString *)postHandler {
+- (SEL)postHandler {
 	return m_posthandler;
 }
 
@@ -96,44 +96,38 @@ inline static NSEvent *makeFakeEvent(NSEventType type, NSEvent *event) {
 	return self;
 }
 
-- (id)initNextState:(GraphStates)s eventMode:(EventMode)m preHandler:(NSString*)preh {
+- (id)initNextState:(GraphStates)s eventMode:(EventMode)m preHandler:(SEL)preh {
 	if ((self = [super init])) {
 		m_eventmode = m;
 		m_nextstate = s;
 		m_prehandler = preh;
-		[m_prehandler retain];
 		m_posthandler =  nil;
 	}
 	return self;
 }
 
-- (id)initNextState:(GraphStates)s eventMode:(EventMode)m postHandler:(NSString*)poh {
+- (id)initNextState:(GraphStates)s eventMode:(EventMode)m postHandler:(SEL)poh {
 	if ((self = [super init])) {
 		m_eventmode = m;
 		m_nextstate = s;
 		m_prehandler = nil;
 		m_posthandler =  poh;
-		[m_posthandler retain];
 	}
 	return self;
 }
 
-- (id)initNextState:(GraphStates)s eventMode:(EventMode)m preHandler:(NSString*)preh postHandler:(NSString*)poh {
+- (id)initNextState:(GraphStates)s eventMode:(EventMode)m preHandler:(SEL)preh postHandler:(SEL)poh {
 	if ((self = [super init])) {
 		m_eventmode = m;
 		m_nextstate = s;
 		m_prehandler = preh;
-		[m_prehandler retain];
 		m_posthandler =  poh;
-		[m_posthandler retain];
 	}
 	return self;
 }
 
 - (void)dealloc {
 	NSLog(@"dealloc on EventGraphEdge got called\n");
-	[m_prehandler release];
-	[m_posthandler release];
 	[super dealloc];
 }
 

@@ -36,8 +36,8 @@ typedef enum {
 } EventMode;
 
 @interface GraphEdge : NSObject {
-	NSString *m_prehandler;
-	NSString *m_posthandler;
+	SEL m_prehandler;
+	SEL m_posthandler;
 	GraphStates m_nextstate;
 	EventMode m_eventmode;
 }
@@ -51,13 +51,13 @@ typedef enum {
 
 - (id) init;
 - (id) initNextState: (GraphStates)s eventMode: (EventMode)m;
-- (id) initNextState: (GraphStates)s eventMode: (EventMode)m preHandler: (NSString*)preh;
-- (id) initNextState: (GraphStates)s eventMode: (EventMode)m postHandler: (NSString*)poh;
-- (id) initNextState: (GraphStates)s eventMode: (EventMode)m preHandler: (NSString*)preh postHandler: (NSString*)poh;
+- (id) initNextState: (GraphStates)s eventMode: (EventMode)m preHandler: (SEL)preh;
+- (id) initNextState: (GraphStates)s eventMode: (EventMode)m postHandler: (SEL)poh;
+- (id) initNextState: (GraphStates)s eventMode: (EventMode)m preHandler: (SEL)preh postHandler: (SEL)poh;
 
 // FIXME: use function pointers.
-- (NSString *)preHandler;
-- (NSString *)postHandler;
+- (SEL)preHandler;
+- (SEL)postHandler;
 - (BOOL)hasPreHandler;
 - (BOOL)hasPostHandler;
 - (NSEvent*)eventForEdge:(NSEvent*)event;

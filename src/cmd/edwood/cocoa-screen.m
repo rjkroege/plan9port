@@ -22,6 +22,7 @@
 #undef Point
 #undef Rect
 
+#include "eventaugmentation.h"
 #include "appwin.h"
 #include "appdelegate.h"
 

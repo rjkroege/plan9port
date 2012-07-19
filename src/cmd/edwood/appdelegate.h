@@ -5,17 +5,19 @@
 /*
  * Interface file is pure cocoa.
 */
-@interface AppDelegate : NSObject {
+@interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, EventAugmentation> {
 	int needflush;
 	WebView* contentview;
 	NSCursor* cursor;
+	NSSelectionAffinity m_selectionaffinity;
+	DOMRange* m_leftselection;
 }
 
 - (id) init;
 
 @property int needflush;
 @property (retain) NSCursor* cursor;
-@property (retain) NSView* contentview;
+@property (retain) WebView* contentview;
 @property (retain) NSBitmapImageRep* img;
 
 // From in.
@@ -46,6 +48,20 @@
 - (void)diagnosticMessage;
 
 - (NSString*)stringValue;
+
+/* From protocol EventAugmentation */
+- (void) postLdMd;
+- (void) postLdRd;
+- (void) postMdLd;
+- (void) postMdRd;
+- (void) postMu;
+- (void) postRdLd;
+- (void) postRdMd;
+- (void) postRu;
+- (void) preLd;
+- (void) preMd;
+- (void) preRd;
+
 
 @end
 

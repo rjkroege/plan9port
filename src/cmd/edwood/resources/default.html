@@ -3,12 +3,28 @@
 <head>
   <link href="gridstyles.css" rel="stylesheet" type="text/css" />
   <link href="codestyles.css" rel="stylesheet" type="text/css" />
-  <link href="selectionstyle.css" rel="stylesheet" type="text/css" />
+  <style id="redselection">
+::selection {
+  background: #ff0000;
+  color: #fff;
+}
+  </style>
+  <style id="greenselection">
+::selection {
+  background: #00ff00;
+  color: #fff;
+}
+  </style>
+  <script>
+/* Set the styles to be off by default. */
+var greenstyle = document.getElementById('greenselection');
+greenstyle.disabled = true;
+
+var redstyle = document.getElementById('redselection');
+redstyle.disabled = true;
+  </script>
 </head>
-
-
 <body>
-
 <div class="container">
   <div class="vertical-column">
 
