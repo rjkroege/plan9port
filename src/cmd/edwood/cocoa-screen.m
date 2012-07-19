@@ -40,6 +40,7 @@ usage(void)
 	threadexitsall("usage");
 }
 
+// FIXME: Move this to a different file
 @interface appdelegate : NSObject @end
 
 void
@@ -56,6 +57,7 @@ threadmain(int argc, char **argv)
 	open("/dev/null", OREAD);
 	open("/dev/null", OWRITE);
 
+#if 0
 	ARGBEGIN{
 	case 'D':		/* for good ps -a listings */
 		break;
@@ -71,11 +73,16 @@ threadmain(int argc, char **argv)
 	default:
 		usage();
 	}ARGEND
+#endif
 
 	if(OSX_VERSION < 100700)
 		[NSAutoreleasePool new];
 
 	[NSApplication sharedApplication];
+
+	// Load a nib file?
+	// [NSBundle loadNibNamed:@"myMain" owner:NSApp];
+
 	[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
 	[NSApp setDelegate:[appdelegate new]];
 	[NSApp activateIgnoringOtherApps:YES];
@@ -125,11 +132,14 @@ static NSCursor* makecursor(Cursor*);
 - (void)applicationDidFinishLaunching:(id)arg
 {
 	in.bigarrow = makecursor(&bigarrow);
-	makeicon();
+	// Change the icon.
+	// makeicon();
 	makemenu();
+	fprint(2, "app finished loading\n");
 	[NSApplication
 		detachDrawingThread:@selector(callservep9p:)
 		toTarget:[self class] withObject:nil];
+	makewin(nil);
 }
 - (void)windowDidBecomeKey:(id)arg
 {
@@ -485,7 +495,7 @@ static void updatecursor(void);
 }
 - (void)cursorUpdate:(NSEvent*)e{ updatecursor();}
 
-- (void)mouseMoved:(NSEvent*)e{ getmouse(e);}
+- (void)mouseMoved:(NSEvent*)e{ fprint(2, "got a mousemotion event\n"); getmouse(e);}
 - (void)mouseDown:(NSEvent*)e{ getmouse(e);}
 - (void)mouseDragged:(NSEvent*)e{ getmouse(e);}
 - (void)mouseUp:(NSEvent*)e{ getmouse(e);}
@@ -1091,6 +1101,7 @@ hidebars(int set)
 		[NSApp setPresentationOptions:opt];
 }
 
+// Construct a menu dynamically.
 static void
 makemenu(void)
 {

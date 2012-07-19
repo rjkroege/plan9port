@@ -69,6 +69,9 @@ zunlock(void)
 
 int trace = 0;
 
+// I would change this to serve incoming messages
+// from sam. I would listen here for incoming and
+// do stuff...
 void
 servep9p(void)
 {
