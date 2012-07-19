@@ -84,6 +84,7 @@ Dirtab dirtabw[]=
 	{ "ctl",		QTFILE,		QWctl,		0600 },
 	{ "data",		QTFILE,		QWdata,		0600 },
 	{ "editout",	QTFILE,		QWeditout,	0200 },
+	{ "edit",		QTFILE,		QWedit,		0600 },
 	{ "errors",		QTFILE,		QWerrors,		0200 },
 	{ "event",		QTFILE,		QWevent,		0600 },
 	{ "rdsel",		QTFILE,		QWrdsel,		0400 },

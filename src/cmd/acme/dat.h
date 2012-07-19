@@ -16,6 +16,7 @@ enum
 	QWctl,
 	QWdata,
 	QWeditout,
+	QWedit,
 	QWerrors,
 	QWevent,
 	QWrdsel,
@@ -225,6 +226,7 @@ int		textselect23(Text*, uint*, uint*, Image*, int);
 int		textselect3(Text*, uint*, uint*);
 void		textsetorigin(Text*, uint, int);
 void		textsetselect(Text*, uint, uint);
+int		textshouldcomplete(Text *);
 void		textshow(Text*, uint, uint, int);
 void		texttype(Text*, Rune);
 
@@ -273,6 +275,8 @@ struct Window
 	int		taglines;
 	Rectangle	tagtop;
 	QLock	editoutlk;
+	Rune*	editrunes;		/* Runes of output */
+	int		neditrunes;	/* Number of edit runes */
 };
 
 void	wininit(Window*, Window*, Rectangle);
@@ -414,10 +418,12 @@ void		xfidclose(Xfid*);
 void		xfidread(Xfid*);
 void		xfidwrite(Xfid*);
 void		xfidctlwrite(Xfid*, Window*);
+void		xfideditwrite(Xfid*, Window*);
 void		xfideventread(Xfid*, Window*);
 void		xfideventwrite(Xfid*, Window*);
 void		xfidindexread(Xfid*);
 void		xfidutfread(Xfid*, Text*, uint, int);
+void		xfideditread(Xfid*, Window*);
 int		xfidruneread(Xfid*, Text*, uint, uint);
 void		xfidlogopen(Xfid*);
 void		xfidlogread(Xfid*);
@@ -577,3 +583,7 @@ Channel	*cwarn;		/* chan(void*)[1] (really chan(unit)[1]) */
 QLock	editoutlk;
 
 #define	STACK	65536
+
+void startwarningcollection(Window*);
+void stopwarningcollection();
+void winstashwarnings(Window*, Rune*, int);

@@ -152,6 +152,9 @@ editcmd(Text *ct, Rune *r, uint n)
 {
 	char *err;
 
+	print("editcmd: <%.*S>, seq: %d running on %s\n", n, r, ct->file->seq, threadgetname());
+
+
 	if(n == 0)
 		return;
 	if(2*n > RBUFSIZE){

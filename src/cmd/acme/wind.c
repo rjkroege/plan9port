@@ -330,6 +330,8 @@ winclose(Window *w)
 			free(w->incl[i]);
 		free(w->incl);
 		free(w->events);
+		free(w->editrunes);
+		w->editrunes = nil;	// Superfluous.
 		free(w);
 	}
 }
@@ -346,6 +348,14 @@ windelete(Window *w)
 		w->events = nil;
 		w->eventx = nil;
 		sendp(x->c, nil);	/* wake him up */
+	}
+
+	if(w->editrunes) {
+		w->neditrunes = 0;
+		fprint(2, "before\n");
+		free(w->editrunes);
+		fprint(2, "after\n");
+		w->editrunes = nil;
 	}
 }
 
@@ -704,4 +714,21 @@ winevent(Window *w, char *fmt, ...)
 		w->eventx = nil;
 		sendp(x->c, nil);
 	}
+}
+
+/**
+ * Adds rune string r of length nr to the accumulated string of output for
+ * the edit operation.
+ * 
+ * NB: this function is not general. It should be exected only within a
+ * startwarningcollection / stopwarningcollection pair.
+ */
+void
+winstashwarnings(Window *w, Rune* r, int nr)
+{
+	fprint(2, "winstashwarnings <%.*S>\n", nr, r);
+
+	w->editrunes = erealloc(w->editrunes, (w->neditrunes+1+nr) * sizeof(Rune));
+	memmove(w->editrunes + w->neditrunes, r, nr * sizeof(Rune));
+	w->neditrunes += nr;
 }

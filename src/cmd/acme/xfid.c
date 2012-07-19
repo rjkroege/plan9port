@@ -379,6 +379,9 @@ xfidread(Xfid *x)
 		xfidutfread(x, &w->tag, w->tag.file->b.nc, QWtag);
 		break;
 
+	case QWedit:
+		xfideditread(x, w);
+		break;
 	case QWrdsel:
 		seek(w->rdselfd, off, 0);
 		n = x->fcall.count;
@@ -516,6 +519,10 @@ xfidwrite(Xfid *x)
 		respond(x, &fc, nil);
 		break;
 
+	case QWedit:
+		xfideditwrite(x, w);
+		break;
+
 	case QWerrors:
 		w = errorwinforwin(w);
 		t = &w->body;
@@ -615,6 +622,36 @@ xfidwrite(Xfid *x)
 	}
 	if(w)
 		winunlock(w);
+}
+
+void
+xfideditwrite(Xfid *x, Window *w)
+{
+	Fcall fc;
+	int nr;
+	Rune *r;
+	Text *t;
+
+	x->fcall.data[x->fcall.count] = 0;
+	r = bytetorune(x->fcall.data, &nr);
+
+
+	t = &w->body;
+	wincommit(w, t);
+
+	// I hypothesize that I should be running this on a different thread.
+	// What if I send it to the mouse thread?
+	// Logic: we know everything works on the mouse thread.
+
+	seq++;	/* Enable undo */
+
+	startwarningcollection(w);
+	editcmd(t, r, nr);
+	free(r);
+	stopwarningcollection();
+
+	fc.count = x->fcall.count;
+	respond(x, &fc, nil);
 }
 
 void
@@ -1058,6 +1095,47 @@ xfideventread(Xfid *x, Window *w)
 	}else{
 		free(w->events);
 		w->events = nil;
+	}
+}
+
+void
+xfideditread(Xfid *x, Window *w)
+{
+	Fcall fc;
+	int nb;
+	int nr;
+	char *b;
+
+	print("running xfideditread, is there stuff: %d\n", w->neditrunes);
+
+	b = fbufalloc();
+	nb = BUFSIZE;		/* We'll send the max of BUFSIZE, fc.count bytes. */
+	if (nb > fc.count)
+		nb = fc.count;
+
+	print("nb %d\n", nb);
+	
+	nr = nb / UTFmax;	/* Adjust for runes and the number available.*/
+	if (nr > w->neditrunes)
+		nr = w->neditrunes;
+
+	print("nr %d\n", nr);
+
+	nb = snprint(b, BUFSIZE+1, "%.*S", nr, w->editrunes);
+	fc.count = nb;
+	fc.data = b;
+	print("about to respond: count  %d data <%.*s>\n", fc.count, fc.count, fc.data);
+	respond(x, &fc, nil);
+	fbuffree(b);
+
+	w->neditrunes -= nr;
+	if(w->neditrunes){
+		memmove(w->editrunes, w->editrunes+nr, w->neditrunes * sizeof(Rune));
+		w->editrunes = erealloc(w->editrunes, w->neditrunes * sizeof(Rune));
+	} else if (w->editrunes) {
+		fprint(2, "freeing the window buffer\n");
+		free(w->editrunes);
+		w->editrunes = nil;
 	}
 }
 

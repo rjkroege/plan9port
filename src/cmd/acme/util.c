@@ -255,6 +255,42 @@ flushwarnings(void)
 	warnings = nil;
 }
 
+/*
+ * Temporary store of the target window for
+ * warning writes.
+ */
+static Window* warningtarget = 0;
+
+/**
+ * Start collecting warnings to a buffer associated with
+ * Window |w|. Data collected to |w|'s buffer is treated
+ * similarlty to writes bound for the event channel.
+ *
+ * Depending on how aggressively acme threads, it is
+ * possible that this is not thread safe. It all runs within
+ * the scope of a w lock afaik which seems fine unless
+ * we have independent mutators on different windows.
+ */
+void
+startwarningcollection(Window* w)
+{
+	if (w->editrunes)
+		free(w->editrunes);
+	w->neditrunes = 0;
+	warningtarget = w;
+}
+
+/**
+ * Stop collecting warnings.
+ */
+void
+stopwarningcollection()
+{
+	if(warningtarget == nil)
+		error("stopwarningcollection without a preceeding start");
+	warningtarget = 0;
+}
+
 void
 warning(Mntdir *md, char *s, ...)
 {
@@ -266,7 +302,11 @@ warning(Mntdir *md, char *s, ...)
 	va_end(arg);
 	if(r == nil)
 		error("runevsmprint failed");
-	addwarningtext(md, r, runestrlen(r));
+	if (warningtarget) {
+		winstashwarnings(warningtarget, r, runestrlen(r));
+	} else {
+		addwarningtext(md, r, runestrlen(r));
+	}
 	free(r);
 }
 
