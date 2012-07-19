@@ -15,7 +15,10 @@ WSYSOFILES=\
 	cocoa-srv.o \
 	cocoa-thread.o \
 	appwin-objc.o \
-	appdelegate-objc.o
+	appdelegate-objc.o \
+	chordingwindow-objc.o \
+	transitiondictionary-objc.o \
+	graphedge-objc.o
 
 #	contentview-objc.o
 

@@ -1,0 +1,38 @@
+
+.container {
+   display: -webkit-box;
+   -webkit-box-orient: horizontal;  
+    /* min-height: 200px;   */
+    height: inherit;
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    right: 0px;
+    left: 0px;
+    background-color: #aaaaaa;
+}
+
+.vertical-column {
+  display: -webkit-box;
+  -webkit-box-flex: 1;
+  -webkit-box-orient: vertical;    
+}
+
+.tile {
+   /* background: red; */
+   display: block;
+   position: relative;
+   /* adjust this to force a non-uniform space sharing */
+   -webkit-box-flex: 1;
+}
+
+.tile-editor {
+  background-color: #dddddd;
+  bottom: 3px;
+  left: 3px;
+  overflow-y: scroll;
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  border-radius: 5px;
+}

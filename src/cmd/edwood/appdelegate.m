@@ -23,7 +23,8 @@
 #undef Rect
 
 #include "appdelegate.h"
-#include "appwin.h"
+#include "graphedge.h"
+#include "chordingwindow.h"
 
 #include <u.h>
 #include <libc.h>
@@ -327,7 +328,7 @@ makewin(char *s)
 	r = [NSWindow contentRectForFrameRect:r
 		styleMask:Winstyle];
 
-	w = [[AppWin alloc]
+	w = [[ChordingWindow alloc]
 		initWithContentRect:r
 		styleMask:Winstyle
 		backing:NSBackingStoreBuffered defer:NO];
