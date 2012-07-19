@@ -1,0 +1,2 @@
+# Start up edwood.
+DYLD_FRAMEWORK_PATH=/Applications/WebKit.app/Contents/Frameworks/10.7 ./o.edwood
