@@ -2,6 +2,10 @@
  * Cocoa's event loop must be in main thread.
  */
 
+
+// Makesure that we make sending unhandled messages a compile-time error
+// if possible.
+
 #define Cursor OSXCursor
 #define Point OSXPoint
 #define Rect OSXRect
@@ -41,7 +45,47 @@ usage(void)
 }
 
 // FIXME: Move this to a different file
-@interface appdelegate : NSObject @end
+@interface AppDelegate : NSObject {
+	int needflush;
+	NSView* contentview;
+	NSCursor* cursor;
+}
+
+- (id) init;
+
+@property int needflush;
+@property (retain) NSCursor* cursor;
+@property (retain) NSView* contentview;
+@property (retain) NSBitmapImageRep* img;
+
+// From in.
+@property (retain) NSCursor* bigarrow;
+@property int kalting;
+@property int kbuttons;
+@property int mbuttons;
+@property NSPoint mpos;
+@property int mscroll;
+@property int undoflag;
+@property int touchevent;
+
+
+- (void)applicationDidFinishLaunching:(id)arg;
+- (void)windowDidBecomeKey:(NSNotification*)notification;
+- (void)windowDidResize:(NSNotification*)notification;
+- (void)windowDidEndLiveResize:(id)arg;
+- (void)windowDidChangeScreen:(NSNotification*)notification;
+- (BOOL)windowShouldZoom:(NSWindow*)window toFrame:(NSRect)r;
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(id)arg;
+- (void)windowDidEnterFullScreen:(NSNotification*)notification;
+- (void)windowWillExitFullScreen:(NSNotification*)notification;
+- (void)windowDidExitFullScreen:(NSNotification*)notification;
+- (void)calltogglefs:(id)arg;
+
+- (void) orKbuttons: (int)k;
+
+- (void)diagnosticMessage;
+
+@end
 
 void
 threadmain(int argc, char **argv)
@@ -84,54 +128,60 @@ threadmain(int argc, char **argv)
 	// [NSBundle loadNibNamed:@"myMain" owner:NSApp];
 
 	[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-	[NSApp setDelegate:[appdelegate new]];
+	[NSApp setDelegate:[AppDelegate new]];
 	[NSApp activateIgnoringOtherApps:YES];
 	[NSApp run];
 }
 
-#define WIN	win.ofs[win.isofs]
-
-struct
-{
-	NSWindow	*ofs[2];	/* ofs[1] for old fullscreen; ofs[0] else */
-	int			isofs;
-	int			isnfs;
-	NSView		*content;
-	NSBitmapImageRep	*img;
-	int			needflush;
-	NSCursor		*cursor;
-} win;
-
-struct
-{
-	NSCursor	*bigarrow;
-	int		kalting;
-	int		kbuttons;
-	int		mbuttons;
-	NSPoint	mpos;
-	int		mscroll;
-	int		undo;
-	int		touchevent;
-} in;
-
-static void hidebars(int);
-static void drawimg(NSRect);
-static void flushwin(void);
-static void followzoombutton(NSRect);
-static void getmousepos(void);
+static void hidebars(int, NSWindow*);
+static void drawimg(NSRect, NSWindow*);
+static void flushwin(NSWindow*);
+static void followzoombutton(NSRect, NSWindow*);
+static void getmousepos(NSWindow*);
 static void makeicon(void);
 static void makemenu(void);
 static void makewin(char*);
 static void sendmouse(void);
 static void setcursor0(Cursor*);
-static void togglefs(void);
+static void togglefs(NSWindow*);
 
 static NSCursor* makecursor(Cursor*);
 
-@implementation appdelegate
+@implementation AppDelegate
+- (id) init
+{
+	if (self = [super init]) {
+		needflush = 0;
+	}
+	return self;
+}
+
+- (void)diagnosticMessage
+{
+	fprint(2, "diagnostic message\n");
+}
+@synthesize needflush;
+@synthesize cursor;
+@synthesize contentview;
+@synthesize img;
+
+// from in
+@synthesize  bigarrow;
+@synthesize  kalting;
+@synthesize  kbuttons;
+@synthesize  mbuttons;
+@synthesize mpos;
+@synthesize  mscroll;
+@synthesize  undoflag;
+@synthesize  touchevent;
+
+- (void) orKbuttons: (int) kb
+{
+	kbuttons |= kb;
+}
 - (void)applicationDidFinishLaunching:(id)arg
 {
-	in.bigarrow = makecursor(&bigarrow);
+	self.bigarrow = makecursor(&kBigArrow);
 	// Change the icon.
 	// makeicon();
 	makemenu();
@@ -141,51 +191,65 @@ static NSCursor* makecursor(Cursor*);
 		toTarget:[self class] withObject:nil];
 	makewin(nil);
 }
-- (void)windowDidBecomeKey:(id)arg
+- (void)windowDidBecomeKey:(NSNotification*)notification
 {
-	if(win.isnfs || win.isofs)
-		hidebars(1);
+	NSWindow* window = [notification object];
 
-	in.touchevent = 0;
+	// my presumption is that this is unnecessary given
+	// windowDidEnterFullScreen
+	//if(win.isnfs || win.isofs)
+	//	hidebars(1, window);
 
-	getmousepos();
+	[[NSApp delegate] setTouchevent: 0];
+
+	getmousepos(window);
 	sendmouse();
 }
-- (void)windowDidResize:(id)arg
+- (void)windowDidResize:(NSNotification*)notification
 {
-	getmousepos();
+	NSWindow* window = [notification object];
+
+	getmousepos(window);
 	sendmouse();
 }
 - (void)windowDidEndLiveResize:(id)arg
 {
-	[win.content display];
+	[[[NSApp delegate] contentview] display];
 }
-- (void)windowDidChangeScreen:(id)arg
+- (void)windowDidChangeScreen:(NSNotification*)notification
 {
-	if(win.isnfs || win.isofs)
-		hidebars(1);
-	[win.ofs[1] setFrame:[[WIN screen] frame] display:YES];
+	NSWindow* window = [notification object];
+	[window setFrame:[[window screen] frame] display:YES];
 }
-- (BOOL)windowShouldZoom:(id)arg toFrame:(NSRect)r
+- (BOOL)windowShouldZoom:(NSWindow*)window toFrame:(NSRect)r
 {
-	followzoombutton(r);
+	followzoombutton(r, window);
 	return YES;
 }
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(id)arg
 {
 	return YES;
 }
-- (void)windowDidEnterFullScreen:(id)arg{ win.isnfs = 1; hidebars(1);}
-- (void)windowWillExitFullScreen:(id)arg{ win.isnfs = 0; hidebars(0);}
-- (void)windowDidExitFullScreen:(id)arg
+- (void)windowDidEnterFullScreen:(NSNotification*)notification{
+	NSWindow* window = [notification object];
+	hidebars(1, window);
+}
+
+- (void)windowWillExitFullScreen:(NSNotification*)notification{ 
+	NSWindow* window = [notification object];
+	hidebars(0, window);
+}
+
+- (void)windowDidExitFullScreen:(NSNotification*)notification
 {
+	NSWindow* window = [notification object];
 	NSButton *b;
 
-	b = [WIN standardWindowButton:NSWindowMiniaturizeButton];
+	b = [window standardWindowButton:NSWindowMiniaturizeButton];
 
 	if([b isEnabled] == 0){
 		[b setEnabled:YES];
-		hidebars(0);
+		hidebars(0, window);
 	}
 }
 
@@ -194,13 +258,22 @@ static NSCursor* makecursor(Cursor*);
 	servep9p();
 	[NSApp terminate:self];
 }
-+ (void)callflushwin:(id)arg{ flushwin();}
-- (void)calltogglefs:(id)arg{ togglefs();}
 
-+ (void)calldrawimg:(NSValue*)v{ drawimg([v rectValue]);}
+/*
+ * Some sort of timer callback. It is conceivable that this could be removed.
+ */
++ (void)callflushwin:(NSTimer*)timer {
+	NSWindow* window = [NSApp mainWindow];
+	if (window)
+		flushwin(window);
+}
+- (void)calltogglefs:(id)arg{ togglefs([NSApp mainWindow]);}
+
++ (void)calldrawimg:(NSValue*)v{ drawimg([v rectValue], [NSApp mainWindow]);}
 + (void)callmakewin:(NSValue*)v{ makewin([v pointerValue]);}
 + (void)callsetcursor0:(NSValue*)v{ setcursor0([v pointerValue]);}
-@end
+@end // AppDelegate
+
 
 static Memimage* initimg(void);
 
@@ -221,7 +294,7 @@ attachscreen(char *label, char *winsize)
 	 * Create window in main thread, else no cursor
 	 * change while resizing.
 	 */
-	[appdelegate
+	[AppDelegate
 		performSelectorOnMainThread:@selector(callmakewin:)
 		withObject:[NSValue valueWithPointer:winsize]
 		waitUntilDone:YES];
@@ -259,7 +332,9 @@ makewin(char *s)
 	NSRect r, sr;
 	NSWindow *w;
 	Rectangle wr;
-	int i, set;
+	int set;
+	NSView* myview;
+	AppDelegate* delegate;
 
 	sr = [[NSScreen mainScreen] frame];
 
@@ -291,20 +366,19 @@ makewin(char *s)
 #endif
 	[w setContentMinSize:NSMakeSize(128,128)];
 
-	win.ofs[0] = w;
-	win.ofs[1] = [[appwin alloc]
-		initWithContentRect:sr
-		styleMask:NSBorderlessWindowMask
-		backing:NSBackingStoreBuffered defer:YES];
-	for(i=0; i<2; i++){
-		[win.ofs[i] setAcceptsMouseMovedEvents:YES];
-		[win.ofs[i] setDelegate:[NSApp delegate]];
-		[win.ofs[i] setDisplaysWhenScreenProfileChanges:NO];
-	}
-	win.isofs = 0;
-	win.content = [contentview new];
-	[WIN setContentView:win.content];
-	[WIN makeKeyAndOrderFront:nil];
+	// win.ofs[0] = w;
+	delegate = [NSApp delegate];
+
+	// Can I use property access on apple's classes?
+	[w setAcceptsMouseMovedEvents:YES];
+	[w setDelegate:delegate];
+	[w setDisplaysWhenScreenProfileChanges:NO];
+
+	// win.isofs = 0;
+	myview = [contentview new];
+	delegate.contentview = myview; // Property setter...
+	[w setContentView:myview];
+	[w makeKeyAndOrderFront:nil];
 }
 
 static Memimage*
@@ -313,8 +387,9 @@ initimg(void)
 	Memimage *i;
 	NSSize size;
 	Rectangle r;
+	AppDelegate* delegate = [NSApp delegate];
 
-	size = [win.content bounds].size;
+	size = [[delegate contentview] bounds].size;
 
 	r = Rect(0, 0, size.width, size.height);
 	i = allocmemimage(r, XBGR32);
@@ -323,7 +398,7 @@ initimg(void)
 	if(i->data == nil)
 		panic("i->data == nil");
 
-	win.img = [[NSBitmapImageRep alloc]
+	delegate.img = [[NSBitmapImageRep alloc]
 		initWithBitmapDataPlanes:&i->data->bdata
 		pixelsWide:Dx(r)
 		pixelsHigh:Dy(r)
@@ -353,30 +428,33 @@ _flushmemscreen(Rectangle r)
 	 * occasionally an empty window: I found no
 	 * satisfactory way to wait for P9P's image.)
 	 */
-	[appdelegate
+	[AppDelegate
 		performSelectorOnMainThread:@selector(calldrawimg:)
 		withObject:[NSValue valueWithRect:rect]
 		waitUntilDone:YES];
 }
 
-static void drawresizehandle(NSRect);
+static void drawresizehandle(NSRect, NSWindow*);
 
+/*
+ * Called from application delegate.
+ */
 static void
-drawimg(NSRect dr)
+drawimg(NSRect dr, NSWindow* window)
 {
 	static int first = 1;
 	NSRect sr;
 
 	if(first){
 		[NSTimer scheduledTimerWithTimeInterval:0.033
-			target:[appdelegate class]
+			target:[AppDelegate class]
 			selector:@selector(callflushwin:) userInfo:nil
 			repeats:YES];
 		first = 0;
 	}
-	sr =  [win.content convertRect:dr fromView:nil];
+	sr =  [[[NSApp delegate] contentview] convertRect:dr fromView:nil];
 
-	if([win.content lockFocusIfCanDraw]){
+	if([[[NSApp delegate] contentview] lockFocusIfCanDraw]){
 
 		/*
 		 * To round the window's bottom corners, we can use
@@ -385,25 +463,22 @@ drawimg(NSRect dr)
 		 * can use "bezierPathWithRoundedRect" with "addClip",
 		 * but it's still too slow for wide Acme windows.
 		 */
-		[win.img drawInRect:dr fromRect:sr
+		[[[NSApp delegate] img] drawInRect:dr fromRect:sr
 //			operation:NSCompositeSourceIn fraction:1
 			operation:NSCompositeCopy fraction:1
 			respectFlipped:YES hints:nil];
 
-		if(OSX_VERSION<100700 && win.isofs==0)
-			drawresizehandle(dr);
-
-		[win.content unlockFocus];
-		win.needflush = 1;
+		[[[NSApp delegate] contentview] unlockFocus];
+		[[NSApp delegate] setNeedflush: 1];
 	}
 }
 
 static void
-flushwin(void)
+flushwin(NSWindow* window)
 {
-	if(win.needflush){
-		[WIN flushWindow];
-		win.needflush = 0;
+	if([NSApp needflush]){
+		[window flushWindow];
+		[[NSApp delegate] setNeedflush: 0];
 	}
 }
 
@@ -414,8 +489,9 @@ enum
 	Handlesize = 3*Barsize + 1*Pixel,
 };
 
+// Unused function.
 static void
-drawresizehandle(NSRect dr)
+drawresizehandle(NSRect dr, NSWindow* window)
 {
 	NSColor *color[Barsize];
 	NSPoint a,b;
@@ -424,14 +500,14 @@ drawresizehandle(NSRect dr)
 	Point c;
 	int i,j;
 
-	size = [win.img size];
+	size = [[[NSApp delegate] img] size];
 	c = Pt(size.width, size.height);
 	r = NSMakeRect(0, 0, Handlesize, Handlesize);
 	r.origin = NSMakePoint(c.x-Handlesize, c.y-Handlesize);
 	if(NSIntersectsRect(r,dr) == 0)
 		return;
 
-	[[WIN graphicsContext] setShouldAntialias:NO];
+	[[window graphicsContext] setShouldAntialias:NO];
 
 	color[0] = [NSColor clearColor];
 	color[1] = [NSColor darkGrayColor];
@@ -451,7 +527,7 @@ drawresizehandle(NSRect dr)
 static void
 resizeimg()
 {
-	[win.img release];
+	[[[NSApp delegate] img] release];
 	_drawreplacescreenimage(initimg());
 	mouseresized = 1;
 	sendmouse();
@@ -459,9 +535,9 @@ resizeimg()
 
 static void getgesture(NSEvent*);
 static void getkeyboard(NSEvent*);
-static void getmouse(NSEvent*);
+static void getmouse(NSEvent*, NSWindow*);
 static void gettouch(NSEvent*, int);
-static void updatecursor(void);
+static void updatecursor(NSCursor*);
 
 @implementation contentview
 
@@ -469,7 +545,7 @@ static void updatecursor(void);
 {
 	static int first = 1;
 
-	if([WIN inLiveResize])
+	if([[self window] inLiveResize])
 		return;
 
 	if(first)
@@ -493,19 +569,28 @@ static void updatecursor(void);
 	[self setAcceptsTouchEvents:YES];
 	return self;
 }
-- (void)cursorUpdate:(NSEvent*)e{ updatecursor();}
+- (void)cursorUpdate:(NSEvent*)e{ updatecursor(nil);}
 
-- (void)mouseMoved:(NSEvent*)e{ fprint(2, "got a mousemotion event\n"); getmouse(e);}
-- (void)mouseDown:(NSEvent*)e{ getmouse(e);}
-- (void)mouseDragged:(NSEvent*)e{ getmouse(e);}
-- (void)mouseUp:(NSEvent*)e{ getmouse(e);}
-- (void)otherMouseDown:(NSEvent*)e{ getmouse(e);}
-- (void)otherMouseDragged:(NSEvent*)e{ getmouse(e);}
-- (void)otherMouseUp:(NSEvent*)e{ getmouse(e);}
-- (void)rightMouseDown:(NSEvent*)e{ getmouse(e);}
-- (void)rightMouseDragged:(NSEvent*)e{ getmouse(e);}
-- (void)rightMouseUp:(NSEvent*)e{ getmouse(e);}
-- (void)scrollWheel:(NSEvent*)e{ getmouse(e);}
+- (void)mouseMoved:(NSEvent*)e{
+	// fprint(2, "got a mousemotion event\n");
+	getmouse(e, [e window]);
+}
+
+- (void)mouseDown:(NSEvent*)e{
+	[[NSApp delegate] diagnosticMessage];
+	getmouse(e, [e window]);
+}
+- (void)mouseDragged:(NSEvent*)e{
+	getmouse(e, [e window]);
+}
+- (void)mouseUp:(NSEvent*)e{ getmouse(e, [e window]);}
+- (void)otherMouseDown:(NSEvent*)e{ getmouse(e, [e window]);}
+- (void)otherMouseDragged:(NSEvent*)e{ getmouse(e, [e window]);}
+- (void)otherMouseUp:(NSEvent*)e{ getmouse(e, [e window]);}
+- (void)rightMouseDown:(NSEvent*)e{ getmouse(e, [e window]);}
+- (void)rightMouseDragged:(NSEvent*)e{ getmouse(e, [e window]);}
+- (void)rightMouseUp:(NSEvent*)e{ getmouse(e, [e window]);}
+- (void)scrollWheel:(NSEvent*)e{ getmouse(e, [e window]);}
 
 - (void)keyDown:(NSEvent*)e{ getkeyboard(e);}
 - (void)flagsChanged:(NSEvent*)e{ getkeyboard(e);}
@@ -593,7 +678,7 @@ getkeyboard(NSEvent *e)
 
 	switch([e type]){
 	case NSKeyDown:
-		in.kalting = 0;
+		[[NSApp delegate] setKalting: 0];
 
 		s = [e characters];
 		c = [s UTF8String][0];
@@ -616,16 +701,16 @@ getkeyboard(NSEvent *e)
 		break;
 
 	case NSFlagsChanged:
-		if(in.mbuttons || in.kbuttons){
-			in.kbuttons = 0;
+		if([[NSApp delegate] mbuttons] || [[NSApp delegate] kbuttons]){
+			[[NSApp delegate] setKbuttons: 0];
 			if(m & NSAlternateKeyMask)
-				in.kbuttons |= 2;
+				[[NSApp delegate] orKbuttons: 2];
 			if(m & NSCommandKeyMask)
-				in.kbuttons |= 4;
+				[[NSApp delegate] orKbuttons: 4];
 			sendmouse();
 		}else
 		if(m & NSAlternateKeyMask){
-			in.kalting = 1;
+			[[NSApp delegate] setKalting: 1];
 			keystroke(Kalt);
 		}
 		break;
@@ -642,20 +727,20 @@ getkeyboard(NSEvent *e)
  * us MouseMove events, at least on OS X Lion.
  */
 static void
-updatecursor(void)
+updatecursor(NSCursor* c)
 {
-	NSCursor *c;
 	int isdown, isinside;
 
-	isinside = NSPointInRect(in.mpos, [win.content bounds]);
-	isdown = (in.mbuttons || in.kbuttons);
+	isinside = NSPointInRect([[NSApp delegate] mpos], [[[NSApp delegate] contentview] bounds]);
+	isdown = ([[NSApp delegate] mbuttons] || [[NSApp delegate] kbuttons]);
 
-	if(win.cursor && (isinside || isdown))
-		c = win.cursor;
-	else if(isinside && usebigarrow)
-		c = in.bigarrow;
-	else
-		c = [NSCursor arrowCursor];
+	if (!c)
+		if([[NSApp delegate] cursor] && (isinside || isdown))
+			c = [[NSApp delegate] cursor];
+		else if(isinside && usebigarrow)
+			c = [[NSApp delegate] bigarrow];
+		else
+			c = [NSCursor arrowCursor];
 	[c set];
 
 	/*
@@ -667,28 +752,31 @@ updatecursor(void)
 }
 
 static void
-getmousepos(void)
+getmousepos(NSWindow* window)
 {
-	NSPoint p;
+	NSPoint p, q;
 
-	p = [WIN mouseLocationOutsideOfEventStream];
-	p = [win.content convertPoint:p fromView:nil];
-	in.mpos.x = round(p.x);
-	in.mpos.y = round(p.y);
+	p = [window mouseLocationOutsideOfEventStream];
+	p = [[[NSApp delegate] contentview] convertPoint:p fromView:nil];
 
-	updatecursor();
+	// This is a disaster for DIP yes?
+	q.x = round(p.x);
+	q.y = round(p.y);
+
+	[[NSApp delegate] setMpos: q];
+	updatecursor(nil);
 }
 
 static void
-getmouse(NSEvent *e)
+getmouse(NSEvent *e, NSWindow* window)
 {
 	float d;
 	int b, m;
 
-	if([WIN isKeyWindow] == 0)
+	if([window isKeyWindow] == 0)
 		return;
 
-	getmousepos();
+	getmousepos(window);
 
 	switch([e type]){
 	case NSLeftMouseDown:
@@ -706,15 +794,15 @@ getmouse(NSEvent *e)
 			if(m & NSAlternateKeyMask){
 				b = 2;
 				// Take the ALT away from the keyboard handler.
-				if(in.kalting){
-					in.kalting = 0;
+				if([[NSApp delegate] kalting]){
+					[[NSApp delegate] setKalting: 0];
 					keystroke(Kalt);
 				}
 			}else
 			if(m & NSCommandKeyMask)
 				b = 4;
 		}
-		in.mbuttons = b;
+		[[NSApp delegate] setMbuttons: b];
 		break;
 
 	case NSScrollWheel:
@@ -724,10 +812,10 @@ getmouse(NSEvent *e)
 		d = [e deltaY];
 #endif
 		if(d>0)
-			in.mscroll = 8;
+			[[NSApp delegate] setMscroll: 8];
 		else
 		if(d<0)
-			in.mscroll = 16;
+			[[NSApp delegate] setMscroll: 16];
 		break;
 
 	case NSMouseMoved:
@@ -774,7 +862,6 @@ getgesture(NSEvent *e)
 	case NSEventTypeMagnify:
 		sum += [e magnification];
 		if(fabs(sum) > Minpinch){
-			togglefs();
 			sum = 0;
 		}
 		break;
@@ -782,7 +869,7 @@ getgesture(NSEvent *e)
 	case NSEventTypeSwipe:
 		dir = getdir(-[e deltaX], [e deltaY]);
 
-		if(in.touchevent)
+		if([[NSApp delegate] touchevent])
 			if(dir==Up || dir==Down)
 				break;
 		interpretswipe(dir);
@@ -836,7 +923,7 @@ gettouch(NSEvent *e, int type)
 	switch(type){
 
 	case NSTouchPhaseBegan:
-		in.touchevent = 1;
+		[[NSApp delegate] setTouchevent: 1];
 		p = NSTouchPhaseTouching;
 		set = [e touchesMatchingPhase:p inView:nil];
 		if(set.count == 3){
@@ -917,8 +1004,8 @@ Return:
 				sendclick(2);
 			odir = 0;
 			tapping = 0;
-			in.undo = 0;
-			in.touchevent = 0;
+			[[NSApp delegate] setUndoflag: 0];
+			[[NSApp delegate] setTouchevent: 0];
 		}
 		break;
 
@@ -956,10 +1043,10 @@ interpretswipe(int dir)
 static void
 sendcmd(int c)
 {
-	if(in.touchevent && (c=='x' || c=='v')){
-		if(in.undo)
+	if([[NSApp delegate] touchevent] && (c=='x' || c=='v')){
+		if([[NSApp delegate] undoflag])
 			c = 'z';
-		in.undo = ! in.undo;
+		[[NSApp delegate] setUndoflag: ! [[NSApp delegate] undoflag]];
 	}
 	keystroke(Kcmd+c);
 }
@@ -967,20 +1054,20 @@ sendcmd(int c)
 static void
 sendclick(int b)
 {
-	in.mbuttons = b;
+	[[NSApp delegate] setMbuttons: b];
 	sendmouse();
-	in.mbuttons = 0;
+	[[NSApp delegate] setMbuttons: 0];
 	sendmouse();
 }
 
 static void
 sendchord(int b1, int b2)
 {
-	in.mbuttons = b1;
+	[[NSApp delegate] setMbuttons: b1];
 	sendmouse();
-	in.mbuttons |= b2;
+	[[NSApp delegate] setMbuttons: [[NSApp delegate] mbuttons] | b2];
 	sendmouse();
-	in.mbuttons = 0;
+	[[NSApp delegate] setMbuttons: 0];
 	sendmouse();
 }
 
@@ -990,12 +1077,12 @@ sendmouse(void)
 	NSSize size;
 	int b;
 
-	size = [win.content bounds].size;
+	size = [[[NSApp delegate] contentview] bounds].size;
 	mouserect = Rect(0, 0, size.width, size.height);
 
-	b = in.kbuttons | in.mbuttons | in.mscroll;
-	mousetrack(in.mpos.x, in.mpos.y, b, msec());
-	in.mscroll = 0;
+	b = [[NSApp delegate] kbuttons] | [[NSApp delegate] mbuttons] | [[NSApp delegate] mscroll];
+	mousetrack([[NSApp delegate] mpos].x, [[NSApp delegate] mpos].y, b, msec());
+	[[NSApp delegate] setMscroll: 0];
 }
 
 void
@@ -1004,73 +1091,50 @@ setmouse(Point p)
 	static int first = 1;
 	NSPoint q;
 	NSRect r;
+	NSWindow* window;
 
 	if([NSApp isActive] == 0)
 		return;
+
+	window = [NSApp mainWindow];
 
 	if(first){
 		/* Try to move Acme's scrollbars without that! */
 		CGSetLocalEventsSuppressionInterval(0);
 		first = 0;
 	}
-	in.mpos = NSMakePoint(p.x, p.y);	// race condition
+	[[NSApp delegate] setMpos: NSMakePoint(p.x, p.y)];	// race condition
 
-	r = [[WIN screen] frame];
+	r = [[window screen] frame];
 
-	q = [win.content convertPoint:in.mpos toView:nil];
-	q = [WIN convertBaseToScreen:q];
+	q = [[[NSApp delegate] contentview] convertPoint:[[NSApp delegate] mpos] toView:nil];
+	q = [window convertBaseToScreen:q];
 	q.y = r.size.height - q.y;
 
 	CGWarpMouseCursorPosition(NSPointToCGPoint(q));
 }
 
 static void
-followzoombutton(NSRect r)
+followzoombutton(NSRect r, NSWindow* window)
 {
 	NSRect wr;
 	Point p;
 
-	wr = [WIN frame];
+	wr = [window frame];
 	wr.origin.y += wr.size.height;
 	r.origin.y += r.size.height;
 
-	getmousepos();
-	p.x = (r.origin.x - wr.origin.x) + in.mpos.x;
-	p.y = -(r.origin.y - wr.origin.y) + in.mpos.y;
+	getmousepos(window);
+	p.x = (r.origin.x - wr.origin.x) + [[NSApp delegate] mpos].x;
+	p.y = -(r.origin.y - wr.origin.y) + [[NSApp delegate] mpos].y;
 	setmouse(p);
 }
 
 static void
-togglefs(void)
+togglefs(NSWindow* window)
 {
-	uint opt, tmp;
-
-#if OSX_VERSION >= 100700
-	if(useoldfullscreen==0 || win.isnfs){
-		[WIN toggleFullScreen:nil];
-		return;
-	}
-#endif
-	[win.content retain];
-	[WIN orderOut:nil];
-	[WIN setContentView:nil];
-
-	win.isofs = ! win.isofs;
-	hidebars(win.isofs);
-
-	/*
-	 * If we move the window from one space to another,
-	 * ofs[0] and ofs[1] can be on different spaces.
-	 * This "setCollectionBehavior" trick moves the
-	 * window to the active space.
-	 */
-	opt = [WIN collectionBehavior];
-	tmp = opt | NSWindowCollectionBehaviorCanJoinAllSpaces;
-	[WIN setContentView:win.content];
-	[WIN setCollectionBehavior:tmp];
-	[WIN makeKeyAndOrderFront:nil];
-	[WIN setCollectionBehavior:opt];
-	[win.content release];
+	[window toggleFullScreen:nil];
+	return;
 }
 
 enum
@@ -1083,12 +1147,12 @@ enum
 };
 
 static void
-hidebars(int set)
+hidebars(int set, NSWindow* window)
 {
 	NSScreen *s,*s0;
 	uint old, opt;
 
-	s = [WIN screen];
+	s = [window screen];
 	s0 = [[NSScreen screens] objectAtIndex:0];
 	old = [NSApp presentationOptions];
 
@@ -1201,8 +1265,7 @@ kicklabel(char *label)
 		return;
 
 	s = [[NSString alloc] initWithUTF8String:label];
-	[win.ofs[0] setTitle:s];
-	[win.ofs[1] setTitle:s];
+	[[NSApp mainWindow] setTitle:s];
 	[[NSApp dockTile] setBadgeLabel:s];
 	[s release];
 }
@@ -1213,7 +1276,7 @@ setcursor(Cursor *c)
 	/*
 	 * No cursor change unless in main thread.
 	 */
-	[appdelegate
+	[AppDelegate
 		performSelectorOnMainThread:@selector(callsetcursor0:)
 		withObject:[NSValue valueWithPointer:c]
 		waitUntilDone:YES];
@@ -1222,19 +1285,12 @@ setcursor(Cursor *c)
 static void
 setcursor0(Cursor *c)
 {
-	NSCursor *d;
-
-	d = win.cursor;
-
+	NSCursor* nsc = makecursor(c);
+	updatecursor(nsc);
 	if(c)
-		win.cursor = makecursor(c);
+		[[NSApp delegate] setCursor:nsc];
 	else
-		win.cursor = nil;
-
-	updatecursor();
-
-	if(d)
-		[d release];
+		[[NSApp delegate] setCursor:nil];
 }
 
 static NSCursor*
