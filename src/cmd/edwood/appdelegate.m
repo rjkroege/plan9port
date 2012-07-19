@@ -263,6 +263,9 @@ enum
     if (searchtarget) {
         DOMRange* newrange = [contentview DOMRangeOfString: searchtarget relativeTo: startrange options: WebFindOptionsWrapAround];
         [contentview setSelectedDOMRange: newrange affinity: m_selectionaffinity];
+        // FIXME: these are invalid coordinates. Rectify.
+        // Point warppoint = { 10, 10 };
+        // setmouse(warppoint);
         // FIXME: warp cursor to a position just inside the range.
     } else {
         [contentview setSelectedDOMRange: m_leftselection affinity: m_selectionaffinity];
@@ -451,7 +454,11 @@ makewin(char *s)
 	// win.isofs = 0;
 	myview = [[WebView alloc] initWithFrame: r frameName: nil groupName: nil];
 
+	// Config for webview.
 	[myview takeStringURLFrom: delegate];
+	[myview setSmartInsertDeleteEnabled: false];
+	[myview setMaintainsBackForwardList: false];
+
 	delegate.contentview = myview; // Property setter...
 	[w setContentView:myview];
 	[w makeKeyAndOrderFront:nil];

@@ -23,7 +23,6 @@
 #undef Rect
 
 #include "eventaugmentation.h"
-#include "appwin.h"
 #include "appdelegate.h"
 
 #include <u.h>
@@ -288,7 +287,10 @@ updatecursor(NSCursor* c)
 
 
 
-
+/*
+ * As I understand this code, it warps the mouse pointer.
+ * Which is what I want.
+ */
 void
 setmouse(Point p)
 {
