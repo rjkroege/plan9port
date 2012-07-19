@@ -27,15 +27,15 @@
  */
 inline static NSEvent *makeFakeEvent(NSEventType type, NSEvent *event) {
 	NSEvent *tweakedEvent;
-	tweakedEvent = [NSEvent	mouseEventWithType:type 
-																		location:[event locationInWindow] 
-															 modifierFlags:[event modifierFlags] 
-																	 timestamp:[event timestamp]
-																windowNumber:[event windowNumber] 
-																		 context:[event context]	
-																 eventNumber:[event eventNumber] 
-																	clickCount:[event clickCount] 
-																		pressure:[event pressure]];
+	tweakedEvent = [NSEvent mouseEventWithType:type 												location:[event locationInWindow] 
+		modifierFlags:[event modifierFlags]
+		timestamp:[event timestamp]
+		windowNumber:[event windowNumber]
+		context:[event context]
+		eventNumber:[event eventNumber]
+		clickCount:[event clickCount]
+		pressure:[event pressure]];
+	// [tweakedEvent autorelease];
 	return tweakedEvent;
 }
 
@@ -59,6 +59,11 @@ inline static NSEvent *makeFakeEvent(NSEventType type, NSEvent *event) {
 					break;
 				case NSOtherMouseDragged: case NSRightMouseDragged:
 					ne = makeFakeEvent(NSLeftMouseDragged, event);
+					break;
+				case NSLeftMouseDragged:
+				case NSLeftMouseUp:
+				case NSLeftMouseDown:
+					ne = event;
 					break;
 				default:
 					// Should never happen.

@@ -37,8 +37,8 @@
  * Does the default event handling for events that modify positions in the 
  * event FSM.
  */
-- (void)mouseEventHandler:(NSEvent *)event {
-	NSEventType nset = [event type];
+- (void)mouseEventHandler:(NSEvent *)event synthType: (NSEventType)nset
+{
 	GraphEdge *edge = [m_transitions objectForKey:[NSNumber numberWithInt:(m_state << 8) | nset]];
 
 //NSLog(@"mouseEventHandler\n");
@@ -48,10 +48,12 @@
 			[m_eventdelegate performSelector: [edge preHandler]];
 		}
 
+//		NSLog(@"before making a new synthetic event\n");
 		event = [edge eventForEdge: event];
 		if (event != nil) {
 			[super sendEvent: event];
 		}
+//		NSLog(@"after making a new synthetic event and calling WebKit\n");
 
 		if ([edge hasPostHandler]) {
 			[m_eventdelegate performSelector: [edge postHandler]];
@@ -67,22 +69,42 @@
 /**
   * Processes each event that are sent to this window. Because we are only interested in mouse
  * events, this capture point will swallow all of the events of interest.
+ * 
+ * Aside: the event monitoring facilities in 10.6 would make it possible to implement this
+ * functionality without necesarily needing to have written a custom window. Consider
+ * in the indefinite future to re-write the chording monitor to use this facility if it would
+ * seem useful.
  */
 - (void)sendEvent:(NSEvent *)event {
 	NSEventType nset = [event type];
-
+	NSEventType snset = nset;
+	unsigned int modifiers = [event modifierFlags];
+	
 	switch (nset) {
+		case NSLeftMouseUp:
+			NSLog(@"modifiers: %x\n", modifiers);
+			snset = (modifiers & NSAlternateKeyMask) ? NSOtherMouseUp : snset;
+			snset = (modifiers & NSCommandKeyMask) ? NSRightMouseUp : snset;
+			goto domouseevent;
+		case NSLeftMouseDown:
+			NSLog(@"modifiers: keymask %x\n", modifiers & NSAlternateKeyMask);
+			snset = (modifiers & NSAlternateKeyMask) ? NSOtherMouseDown : snset;
+			snset = (modifiers & NSCommandKeyMask) ? NSRightMouseDown : snset;
+			goto domouseevent;
+		case NSLeftMouseDragged:
+			NSLog(@"modifiers: %x\n", modifiers);
+			snset = (modifiers & NSAlternateKeyMask) ? NSOtherMouseDragged : snset;
+			snset = (modifiers & NSCommandKeyMask) ? NSRightMouseDragged : snset;
+			goto domouseevent;
 		case NSOtherMouseDown:
 		case NSOtherMouseUp:
-		case NSLeftMouseUp:
-		case NSLeftMouseDown:
 		case NSRightMouseDown:
 		case NSRightMouseUp:
 		case NSOtherMouseDragged:			
-		case NSLeftMouseDragged:
 		case NSRightMouseDragged:
+domouseevent:
 			// NSLog(@"processing a mouse event with mouseEventHandler\n");
-			[self mouseEventHandler: event];
+			[self mouseEventHandler: event synthType: snset];
 			break;
 		default:
 			[super sendEvent:event]; 
