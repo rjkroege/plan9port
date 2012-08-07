@@ -97,7 +97,7 @@ enum
 // FIXME: use bundle loading.
 - (NSString*)stringValue
 {
-	return @"file:///usr/local/plan9/src/cmd/edwood/resources/default.html";
+	return @"file:///Users/rjkroege/tools/plan9/src/cmd/edwood/resources/default.html";
 }
 
 - (void) orKbuttons: (int) kb
