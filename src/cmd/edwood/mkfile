@@ -45,8 +45,18 @@ latin1.h: $PLAN9/lib/keyboard $O.mklatinkbd
 
 CLEANFILES=$O.macargv $O.mklatinkbd latin1.h
 
-install: mklatinkbd.install
-install:Q: 
-	if [ $MACARGV ]; then
-		mk $MKFLAGS macargv.install
-	fi
+# This is non-clever.
+bundle: o.edwood
+    mk $MKFLAGS # builds edwood
+    mkdir -p edwood.app/Contents/MacOS
+    mkdir -p edwood.app/Contents/Resources/html
+    cp Info.plist edwood.app/Contents/Info.plist
+    cp -r resources/* edwood.app/Contents/Resources/html
+    cp $O.edwood edwood.app/Contents/MacOS/edwood
+
+
+# install: mklatinkbd.install
+# install:Q: 
+#	if [ $MACARGV ]; then
+#		mk $MKFLAGS macargv.install
+#	fi

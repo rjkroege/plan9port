@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>edwood</string>
+
+	<key>CFBundleDisplayName</key>
+	<string>edwood</string>
+
+	<key>CFBundleIdentifier</key>
+	<string>org.liqui.edwood</string>
+
+	<key>CFBundleVersion</key>
+	<string>0.1</string>
+
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+
+	<key>CFBundleSignature</key>
+	<string>edwd</string>
+
+	<key>CFBundleExecutable</key>
+	<string>edwod</string>
+
+	<!-- Recommended keys. -->
+	<key>LSMinimumSystemVersion</key>
+	<string>10.8</string>
+</dict>
+</plist>

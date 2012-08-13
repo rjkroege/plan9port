@@ -20,4 +20,11 @@ install.log
 install.sum
 last-change
 src/cmd/awk/y.output
+<<<<<<< HEAD
 src/cmd/devdraw/latin1.h
+=======
+src/cmd/devdraw/o.devdraw
+src/cmd/rc/x.tab.h
+*.o
+
+>>>>>>> 570432a... first pass at constructing an app bundle
