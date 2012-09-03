@@ -31,6 +31,7 @@
 @property int touchevent;
 
 
+- (void)applicationWillFinishLaunching:(id)arg;
 - (void)applicationDidFinishLaunching:(id)arg;
 - (void)windowDidBecomeKey:(NSNotification*)notification;
 - (void)windowDidResize:(NSNotification*)notification;

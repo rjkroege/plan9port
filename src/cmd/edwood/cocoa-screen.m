@@ -90,15 +90,31 @@ threadmain(int argc, char **argv)
 	if(OSX_VERSION < 100700)
 		[NSAutoreleasePool new];
 
-	[NSApplication sharedApplication];
+    NSApplication* app = [NSApplication sharedApplication];
 
+
+        NSLog(@"edwood starting\n");
+	
+        // Hack?
+#if 0
+        ProcessSerialNumber psn = { 0, kCurrentProcess };
+        OSStatus returnCode = TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+        NSLog(@"returnCode $d\n", returnCode);
+#endif
+
+         // [NSApp activateIgnoringOtherApps:YES];
 	// Load a nib file?
 	// [NSBundle loadNibNamed:@"myMain" owner:NSApp];
 
 	[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
 	[NSApp setDelegate:[AppDelegate new]];
-	[NSApp activateIgnoringOtherApps:YES];
+	// [NSApp activateIgnoringOtherApps:YES];
+	
+NSLog(@"edwood... about to run\n");	
+	
 	[NSApp run];
+	
+	NSLog(@"edwood exiting?\n");
 }
 
 

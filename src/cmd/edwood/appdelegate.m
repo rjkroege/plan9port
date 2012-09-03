@@ -97,6 +97,7 @@ enum
 // FIXME: use bundle loading.
 - (NSString*)stringValue
 {
+    NSLog(@"we asked what to load!\n");
 	return @"file:///Users/rjkroege/tools/plan9/src/cmd/edwood/resources/default.html";
 }
 
@@ -105,17 +106,23 @@ enum
 	kbuttons |= kb;
 }
 
+- (void)applicationWillFinishLaunching:(id)arg
+{
+    NSLog(@"applicationWillFinishLaunching\n");
+    makemenu();
+}
+
 - (void)applicationDidFinishLaunching:(id)arg
 {
-	self.bigarrow = makecursor(&kBigArrow);
-	// Change the icon.
-	// makeicon();
-	makemenu();
-	fprint(2, "app finished loading\n");
-	[NSApplication
-		detachDrawingThread:@selector(callservep9p:)
-		toTarget:[self class] withObject:nil];
-	makewin(nil);
+    NSLog(@"applicationDidFinishLaunching\n");
+    self.bigarrow = makecursor(&kBigArrow);
+    // Change the icon.
+    // makeicon();
+    fprint(2, "app finished loading\n");
+    [NSApplication
+        detachDrawingThread:@selector(callservep9p:)
+        toTarget:[self class] withObject:nil];
+    makewin(nil);
 }
 
 - (void)windowDidBecomeKey:(NSNotification*)notification
@@ -155,7 +162,7 @@ enum
 }
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(id)arg
 {
-	return YES;
+	return NO;
 }
 - (void)windowDidEnterFullScreen:(NSNotification*)notification{
 	NSWindow* window = [notification object];
@@ -182,8 +189,11 @@ enum
 
 + (void)callservep9p:(id)arg
 {
-	servep9p();
-	[NSApp terminate:self];
+    NSLog(@"Setup server here connected to sam application");
+    // FIXME: this obviously needs to be repaired.
+    // servep9p();
+    // [NSApp terminate:self];
+    NSLog(@"Shudown server thread.\n");
 }
 
 /*
@@ -463,6 +473,8 @@ makewin(char *s)
 	[w setContentView:myview];
 	[w makeKeyAndOrderFront:nil];
 	[w makeFirstResponder: myview];
+	
+	NSLog(@"makewin ending\n");
 }
 
 
@@ -495,6 +507,8 @@ makemenu(void)
 	[i0 setSubmenu:m];
 	[i0 release];
 	[m release];
+	
+	NSLog(@"makemenu ending\n");
 }
 
 void
