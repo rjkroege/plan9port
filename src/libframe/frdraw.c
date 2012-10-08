@@ -4,6 +4,15 @@
 #include <mouse.h>
 #include <frame.h>
 
+// Debugging probes
+static void probe_stringbg(Image*im, Point pt, Image* im2, Point pt2, Font*fn, char* str, Image* im3, Point pt3, int where)
+{
+    fprint(2, "stringbg <%s> frdraw.c:%d\n", str, where);
+    stringbg(im, pt, im2, pt2, fn, str, im3, pt3);
+}
+#define stringbg(im, pt, im2, pt2, fn, str, im3, pt3) probe_stringbg(im, pt, im2, pt2, fn, str, im3, pt3, __LINE__)
+
+
 void
 _frdrawtext(Frame *f, Point pt, Image *text, Image *back)
 {

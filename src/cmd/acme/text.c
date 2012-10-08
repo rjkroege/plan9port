@@ -12,6 +12,29 @@
 #include "dat.h"
 #include "fns.h"
 
+// debugging code
+static void probe_frdrawsel0(Frame* f, Point pt, ulong l1, ulong l2, Image* im1, Image* im2, int where)
+{
+    fprint(2, "frdrawsel0 text.c:%d\n", where);
+    frdrawsel0(f, pt, l1, l2, im1, im2);
+}
+
+static void probe_frdrawsel(Frame* f, Point pt, ulong l1, ulong l2, int d1, int where)
+{
+    fprint(2, "frdrawsel text.c:%d ->  %d\n", where, d1);
+    frdrawsel(f, pt, l1, l2, d1);
+}
+
+static void probe_frinsert(Frame*f, Rune* r1, Rune* r2, ulong o, int where)
+{
+    fprint(2, "frinsert text.c:%d  <%.*S>\n", where, r2-r1, r1);
+    frinsert(f, r1, r2, o);
+}
+
+#define frdrawsel0(f, pt, l1, l2, im1, im2) probe_frdrawsel0(f, pt, l1, l2, im1, im2, __LINE__)
+#define frdrawsel(f, pt, l1, l2, d1) probe_frdrawsel(f, pt, l1, l2, d1,  __LINE__)
+#define frinsert(f, r1, r2, o) probe_frinsert(f, r1, r2, o,  __LINE__)
+
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
 static Rune Ldot[] = { '.', 0 };
