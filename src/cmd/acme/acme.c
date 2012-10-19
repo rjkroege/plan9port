@@ -969,19 +969,20 @@ iconinit(void)
 	Image *tmp;
 
 	if(tagcols[BACK] == nil) {
+		/* Colors inspired by Apple's pro-apps */
 		/* Blue */
-		tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
-		tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
-		tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
+		tagcols[BACK] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0xDADBDAff);
+		tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0x999999ff);
+		tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0x5A5A5Aff);
 		tagcols[TEXT] = display->black;
 		tagcols[HTEXT] = display->black;
-	
+
 		/* Yellow */
-		textcols[BACK] = allocimagemix(display, DPaleyellow, DWhite);
-		textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DDarkyellow);
-		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DYellowgreen);
+		textcols[BACK] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0xBDBDBDff);
+		textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0x5A616Bff);
+		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0x5A5A5Aff);
 		textcols[TEXT] = display->black;
-		textcols[HTEXT] = display->black;
+		textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, 0xF7F7F7ff);
 	}
 	
 	r = Rect(0, 0, Scrollwid+ButtonBorder, font->height+1);
