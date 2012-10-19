@@ -20,6 +20,8 @@ enum{
 	TABDIR = 3	/* width of tabs in directory windows */
 };
 
+int textshouldcomplete(Text*);
+
 void
 textinit(Text *t, File *f, Rectangle r, Reffont *rf, Image *cols[NCOL])
 {
@@ -661,6 +663,9 @@ texttype(Text *t, Rune r)
 	int nr;
 	Rune *rp;
 	Text *u;
+	Point pt;
+
+	// print("char code: %C -> %x\n", r,r);
 
 	if(t->what!=Body && t->what!=Tag && r=='\n')
 		return;
@@ -671,20 +676,60 @@ texttype(Text *t, Rune r)
 	rp = &r;
 	switch(r){
 	case Kleft:
+	case 0x2:  /* ^B */
 		typecommit(t);
 		if(t->q0 > 0)
 			textshow(t, t->q0-1, t->q0-1, TRUE);
 		return;
 	case Kright:
+	case 0x06:	/* ^F: was complete */
 		typecommit(t);
 		if(t->q1 < t->file->b.nc)
 			textshow(t, t->q1+1, t->q1+1, TRUE);
 		return;
+	case 0x0e: /* ^N */
 	case Kdown:
-		if(t->what == Tag)
+		if(t->what == Tag && !t->w->tagexpand)
 			goto Tagdown;
-		n = t->fr.maxlines/3;
-		goto case_Down;
+		else {
+			typecommit(t);
+			q0 = t->q0;
+			pt = frptofchar(&t->fr, q0 - t->org);
+			if (pt.y >= t->fr.r.max.y - t->fr.font->height && t->what != Tag) {
+				int q1 = t->org + frcharofpt(&t->fr,
+						Pt(t->fr.r.min.x, t->fr.r.min.y + 3 * t->fr.font->height));
+				textsetorigin(t, q1, TRUE);
+				pt = frptofchar(&t->fr, t->q0 - t->org);
+			}
+			pt.y += t->fr.font->height;
+			q0 = t->org + frcharofpt(&t->fr, pt);
+			textshow(t, q0, q0, TRUE);
+		}
+		return;
+	case 0x10: /* ^P  */
+	case Kup:
+		if (t->what == Tag && t->w->tagexpand && t->q0 == 0)
+			goto Tagup;
+		else {
+			typecommit(t);
+			q0 = t->q0;
+			pt = frptofchar(&t->fr, q0 - t->org);
+			if (pt.y < t->fr.r.min.y + t->fr.font->height) {
+				int q1;
+				q1 = textbacknl(t, t->org, 3);
+				textsetorigin(t, q1, TRUE);
+				pt = frptofchar(&t->fr, t->q0 - t->org);
+			} 
+			pt.y -= t->fr.font->height;
+			q0 = t->org + frcharofpt(&t->fr, pt);
+			textshow(t, q0, q0, TRUE);
+			return;
+		}
+//	case Kdown:
+//		if(t->what == Tag)
+//			goto Tagdown;
+//		n = t->fr.maxlines/3;
+//		goto case_Down;
 	case Kscrollonedown:
 		if(t->what == Tag)
 			goto Tagdown;
@@ -698,11 +743,11 @@ texttype(Text *t, Rune r)
 		q0 = t->org+frcharofpt(&t->fr, Pt(t->fr.r.min.x, t->fr.r.min.y+n*t->fr.font->height));
 		textsetorigin(t, q0, TRUE);
 		return;
-	case Kup:
-		if(t->what == Tag)
-			goto Tagup;
-		n = t->fr.maxlines/3;
-		goto case_Up;
+//	case Kup:
+//		if(t->what == Tag)
+//			goto Tagup;
+//		n = t->fr.maxlines/3;
+//		goto case_Up;
 	case Kscrolloneup:
 		if(t->what == Tag)
 			goto Tagup;
@@ -722,18 +767,6 @@ texttype(Text *t, Rune r)
 		} else
 			textshow(t, 0, 0, FALSE);
 		return;
-	case Kend:
-		typecommit(t);
-		if(t->iq1 > t->org+t->fr.nchars) {
-			if(t->iq1 > t->file->b.nc) {
-				// should not happen, but does. and it will crash textbacknl.
-				t->iq1 = t->file->b.nc;
-			}
-			q0 = textbacknl(t, t->iq1, 1);
-			textsetorigin(t, q0, TRUE);
-		} else
-			textshow(t, t->file->b.nc, t->file->b.nc, FALSE);
-		return;
 	case 0x01:	/* ^A: beginning of line */
 		typecommit(t);
 		/* go to where ^U would erase, if not already at BOL */
@@ -743,6 +776,7 @@ texttype(Text *t, Rune r)
 		textshow(t, t->q0-nnb, t->q0-nnb, TRUE);
 		return;
 	case 0x05:	/* ^E: end of line */
+	case Kend:
 		typecommit(t);
 		q0 = t->q0;
 		while(q0<t->file->b.nc && textreadc(t, q0)!='\n')
@@ -810,9 +844,14 @@ texttype(Text *t, Rune r)
 	}
 	textshow(t, t->q0, t->q0, 1);
 	switch(r){
-	case 0x06:	/* ^F: complete */
+	case 0x09: /* tab */
+		if (textshouldcomplete(t))
+			goto completeCommon;
+		break;
 	case Kins:
-		typecommit(t);
+	typecommit(t);
+	case 0x0C: /* ^L */
+	completeCommon:
 		rp = textcomplete(t);
 		if(rp == nil)
 			return;
@@ -829,6 +868,30 @@ texttype(Text *t, Rune r)
 			typecommit(t);
 		t->iq1 = t->q0;
 		return;
+	case 0x0B:	/* ^K erase backwards to end of line */
+		// check bounds
+		// typecommit makes sure that cached content is preserved
+		// so ^k shoudl work better?
+		typecommit(t);
+		q0 = t->q0;
+		q1 = t->q0;
+		while(q1<t->file->b.nc && textreadc(t, q1)!='\n')
+			q1++;
+		nnb = q1 - q0;
+		if (nnb != 0) {
+			goto eraseCommon;
+		}
+	case 0x04:	/* ^D: erase backwards */
+		if(t->q1 < t->file->b.nc){
+			// Correct result but causes an uneeded repaint?
+			typecommit(t);
+			textshow(t, t->q1+1, t->q1+1, TRUE);
+			nnb = 1;
+			q1 = t->q0;
+			q0 = q1-nnb;
+			goto eraseCommon;
+		}
+		return;
 	case 0x08:	/* ^H: erase character */
 	case 0x15:	/* ^U: erase line */
 	case 0x17:	/* ^W: erase word */
@@ -837,6 +900,7 @@ texttype(Text *t, Rune r)
 		nnb = textbswidth(t, r);
 		q1 = t->q0;
 		q0 = q1-nnb;
+	eraseCommon:
 		/* if selection is at beginning of window, avoid deleting invisible text */
 		if(q0 < t->org){
 			q0 = t->org;
@@ -872,6 +936,12 @@ texttype(Text *t, Rune r)
 			textfill(t->file->text[i]);
 		t->iq1 = t->q0;
 		return;
+	case Kcmd+'d':	/* %D: insert a ^D */
+		r = 0x4;
+		break;
+	case Kcmd+'t':	/* %T: insert a tab */
+		r = 0x09;
+		break;
 	case '\n':
 		if(t->w->autoindent){
 			/* find beginning of previous line using backspace code */
@@ -1646,4 +1716,22 @@ textreset(Text *t)
 	t->q1 = 0;
 	filereset(t->file);
 	bufreset(&t->file->b);
+}
+
+int
+textshouldcomplete(Text *t)
+{
+	int i;
+	Rune r;
+
+	for (i = 1; i < 128; i++) {
+		if (t->q0  < i)
+			return 0;
+		r = textreadc(t, t->q0 - i);
+		if (r == '\n')
+			return 0;
+		else if (r != ' ' && r != '\t')
+			return 1;
+	}
+	return 0;
 }
