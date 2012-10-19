@@ -847,6 +847,10 @@ texttype(Text *t, Rune r)
 	case 0x09: /* tab */
 		if (textshouldcomplete(t))
 			goto completeCommon;
+		if (t->what == Body) { /* Only suppress tabs in body contents. */
+			for (i = 0; i < t->tabstop - 1; i++) texttype(t, ' ');
+			r = ' ';
+		}
 		break;
 	case Kins:
 	typecommit(t);
