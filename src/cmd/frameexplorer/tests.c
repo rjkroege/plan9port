@@ -19,10 +19,6 @@ testOne(Frame *f)
 }
 
 
-
-
-
-
 void
 runAllTests(Frame* f)
 {
