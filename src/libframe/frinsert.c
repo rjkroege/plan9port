@@ -252,7 +252,8 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 		frame.box[0].height = _max(frame.box[0].height, f->box[n0-1].height);
 		frame.box[0].ascent = _max(frame.box[0].ascent, f->box[n0-1].ascent);
 	}
-#if 0
+// Merge error...
+// #if 0
 	if (n0 >= 0 && n0 < f->nbox) {
 		frame.box[frame.nbox].height = _max(frame.box[frame.nbox].height, f->box[n0].height);
 		frame.box[frame.nbox].ascent = _max(frame.box[frame.nbox].ascent, f->box[n0].ascent);
@@ -269,7 +270,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 		frstick(f, pt, 0, (b0 >= 0) ? f->box[b0].height : 0);
 	}
 
-/*
+	/*
 	 * Find point where old and new x's line up
 	 * Invariants:
 	 *	pt0 is where the next box (b, n0) is now

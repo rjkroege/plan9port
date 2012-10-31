@@ -38,7 +38,7 @@ frdelete(Frame *f, ulong p0, ulong p1)
 		drawerror(f->display, "off end in frdelete");
 	n1 = _frfindbox(f, n0, p0, p1);
 
-	print("\Start of deletion, after chopping the text up\n");
+	print("Start of deletion, after chopping the text up\n");
 	_frdiagdump(f);
 
 	pt0 = _frptofcharnb(f, p0, n0);
