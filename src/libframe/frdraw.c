@@ -18,15 +18,14 @@ void
 _frdrawtext(Frame *f, Point pt, Image *text, Image *back)
 {
 	Frbox *b;
-	int nb, height;	/* height is the height of the box before b. */
+	int nb;
 
-	for(height = 0, nb=0,b=f->box; nb<f->nbox; nb++, b++){
-		print("_frdrawtext[%d]\tpt: %d %d  h:%d \n",  nb, pt.x, pt.y, height);
-		_frlinewrappoint(f, &pt, b, &height);
-		print("\t\t\tpt: %d %d h: %d\n",  pt.x, pt.y, height);
+	for(nb=0,b=f->box; nb<f->nbox; nb++, b++){
+		print("frdraw.c:/^_frdrawtext/  pt: %d %d\n",  pt.x, pt.y);
 		if(!f->noredraw && b->nrune >= 0)
 			srunestringn(f->b, pt, b->ptr, b->nrune, b->ptags, f->styles, b->ascent);
-		pt.x += b->wid;
+		_frcklinewrap(f, &pt, b);
+		print("end of _frdrawtext loop after wrapping: frdraw.c:/^_frdrawtext/  pt: %d %d\n",  pt.x, pt.y);
 	}
 }
 
@@ -145,6 +144,7 @@ frredraw(Frame *f)
 	pt = frdrawsel0(f, pt, f->p1, f->nchars, f->cols[BACK], f->cols[TEXT]);
 }
 
+#if 0
 /*
 	This routine is for backwards compatibility.  It does not do
 	the right thing when called from outside.  You could preserve
@@ -163,6 +163,7 @@ frtick(Frame *f, Point pt, int ticked)
 	print("frtick is DEPRECATED. Your cursor won't look right.\n");
 	frstick(f, pt, ticked, f->font->height);
 }
+#endif
 
 /*
 	This is the new routine that code should use going forward.
@@ -192,15 +193,21 @@ frstick(Frame *f, Point pt, int ticked, int h) {
 	f->ticked = ticked;
 }
 
+/*
+	TODO(rjkroege): Fix this.
+*/
 void
 frtick(Frame *f, Point pt, int ticked)
 {
+	print("frtick won't look right.  Your cursor won't look right.\n");
 	if(f->tickscale != scalesize(f->display, 1)) {
 		if(f->ticked)
-			_frtick(f, pt, 0);
+			// _frtick(f, pt, 0);
+			frstick(f, pt, 0, f->font->height);  
 		frinittick(f);
 	}
-	_frtick(f, pt, ticked);
+	// _frtick(f, pt, ticked);
+	frstick(f, pt, ticked, f->font->height);  
 }
 
 Point
