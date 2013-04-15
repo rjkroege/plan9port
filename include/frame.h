@@ -6,7 +6,6 @@ extern "C" {
 
 AUTOLIB(frame)
 
-typedef struct Frboxorigin Frboxorigin;
 typedef struct Frbox Frbox;
 typedef struct Frame Frame;
 
@@ -20,23 +19,20 @@ enum{
 };
 
 #define	FRTICKW	3
-
 struct Frbox
 {
-	int		wid;	/* in pixels */
-	int	height;	/* in pixels */
-	int	ascent;	/* in pixels */
+	long	wid;		/* in pixels */
 	long	nrune;	/* <0 ==> negate and treat as break char */
-	Rune	*ptr;
-	STag*	ptags;
+	uchar	*ptr;
+	STag 	*ptags;
 	short	bc;		/* break char */
 	short	minwid;
 };
 
 struct Frame
 {
-	// FIXME: delete this and handle the results...
-	Font		*font;		/* of default chars in the frame */
+	/* Needed for backwards compatability. */  
+	Font		*font;	/* of default chars in the frame */
 	Display		*display;	/* on which frame appears */
 	Image		*b;		/* on which frame appears */
 	Image		*cols[NCOL];	/* text and background colors */
@@ -52,14 +48,15 @@ struct Frame
 	ushort		maxlines;	/* total # lines in frame */
 	ushort		lastlinefull;	/* last line fills frame */
 	ushort		modified;	/* changed since frselect() */
-	Image		*tick;	/* typing tick */
+	Image		*tick;		/* typing tick */
 	Image		*tickback;	/* saved image under tick */
-	int			ticked;	/* flag: is tick onscreen? */
+	int			ticked;		/* flag: is tick onscreen? */
 	int			noredraw;	/* don't draw on the screen */
 	int			tickscale;	/* tick scaling factor */
-	int			msc;	/* maxium valid stye tag value */
-	Style*		styles; /* Pointer to array of styles */
-	Style			defaultstyle; /* Single style for unstyled frames */
+	int			mheight;		/* maximum height across any particular style */
+	int			msc;		/* maxium valid stye tag value */
+	Style*		styles;		 /* Pointer to array of styles */
+	Style		defaultstyle;	 /* Single style for unstyled frames */
 };
 
 ulong	frcharofpt(Frame*, Point);
@@ -77,13 +74,14 @@ void	frredraw(Frame*);
 
 void frsinsert(Frame*, Rune*, Rune*, STag*, ulong);
 void frsinit(Frame*, Rectangle, Style*, int sc, Image*, Image** cols);
-void	frstick(Frame*, Point, int, int);
+// void	frstick(Frame*, Point, int, int);
 Point _frsptofchar(Frame*, ulong, int*, int);
 Point _frsptofcharh(Frame*, ulong, int*);
+// What is this function for and why is it different?
 void frsselectpaint(Frame*, Point, Point, Image*, int, int);
 void _frdiagdump(Frame *f);
 
-Rune	*_frallocstr(Frame*, unsigned);
+uchar*	_frallocstr(Frame*, unsigned);
 void	_frinsure(Frame*, int, unsigned);
 STag* _fralloctags(Frame*, unsigned);
 Point	_frdraw(Frame*, Point);
@@ -96,34 +94,21 @@ int	_frfindbox(Frame*, int, ulong, ulong);
 void	_frclosebox(Frame*, int, int);
 int	_frcanfit(Frame*, Point, Frbox*);
 void	_frcklinewrap(Frame*, Point*, Frbox*);
-void	_frcklinewrap0(Frame*, Point*, Frbox*, int);
+void	_frcklinewrap0(Frame*, Point*, Frbox*);
 void	_fradvance(Frame*, Point*, Frbox*);
-int	_frlinewrappoint(Frame*, Point*, Frbox*, int*);
 int	_frnewwid(Frame*, Point, Frbox*);
 int	_frnewwid0(Frame*, Point, Frbox*);
 void	_frclean(Frame*, Point, int, int);
 void	_frdrawtext(Frame*, Point, Image*, Image*);
 void	_fraddbox(Frame*, int, int);
-// Point	_frptofcharptb(Frame*, ulong, Point, int*, int);
+Point	_frptofcharptb(Frame*, ulong, Point,  int);
 Point	_frptofcharnb(Frame*, ulong, int);
 int	_frstrlen(Frame*, int);
 void	frtick(Frame*, Point, int);
 void	frinittick(Frame*);
-void _frresizetick(Frame*, int);
-void _frfixheights(Frame*);
 
 #define	NRUNE(b)	((b)->nrune<0? 1 : (b)->nrune)
-// FIXME: Every NBYTE usage is suspect.
-// #define	NBYTE(b)	strlen((char*)(b)->ptr)
-
-static int
-_max(int a, int b)
-{
-	if (a < b)
-		return b;
-	else
-		return a;
-}
+#define	NBYTE(b)	strlen((char*)(b)->ptr)
 
 #if defined(__cplusplus)
 }

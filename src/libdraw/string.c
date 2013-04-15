@@ -37,24 +37,10 @@ runestring(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r)
 	return _string(dst, pt, src, sp, f, nil, r, 1<<24, dst->clipr, nil, ZP, SoverD);
 }
 
-// Styled
-// TODO(rjk): I should support all of the base entry points.
-Point
-srunestring(Image *dst, Point pt, Rune *r, STag *styletags, Style *styledefns, int ascent)
-{
-	return _sstring(dst, pt, r, 1<<24, dst->clipr, SoverD, styletags, styledefns, ascent);
-}
-
 Point
 runestringop(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r, Drawop op)
 {
 	return _string(dst, pt, src, sp, f, nil, r, 1<<24, dst->clipr, nil, ZP, op);
-}
-
-Point
-srunestringn(Image *dst, Point pt, Rune *r, int len, STag *styletags, Style *styledefns, int ascent)
-{
-	return _sstring(dst, pt, r, len, dst->clipr, SoverD, styletags, styledefns, ascent);
 }
 
 Point
@@ -69,36 +55,40 @@ runestringnop(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r, int 
 	return _string(dst, pt, src, sp, f, nil, r, len, dst->clipr, nil, ZP, op);
 }
 
-// Styled. On runes only.
-// TODO(rjk): note that ascent is the line height.
-// TODO(rjk): I should support drawing with utf8 too per the original
-// API.
-// TODO(rjk): must change how background colors work. In particular,
-// I want to excise support for backgrounds that vary with each character.
-// so that the API is more like the original. Moreover, I can fix up little
-// dropped pixel turds by filling rectangles with the background colour?
-// FIXME: may need to do something clever about painting the backgrounds.
-// FIXME: might have to do something about heights.
+/*	Support for styled strings. */
+// There may remain issues associated with background drawing.
 Point
-_sstring(Image *dst, Point pt, Rune *r, int len, Rectangle clipr, Drawop op, STag *t, Style *styledefns, int ascent)
+_ystring(Image *dst, Point pt, char *s, Rune *r, int len, Rectangle clipr, Image* bg, Point bgp, Drawop op, STag *t, Style *styledefns, int mheight)
 {
 	Style *style;
 	Point p;
-	int i, o;
+	int i, o, w;
 	STag def = 0;
+	Rune rw;
 	
-	if (ascent == 0) {
-		_srunestringnwidth(r, len, t, styledefns, &ascent);
-	}
-
 	o = (t) ? 1 : 0;
 	t = (t) ? t : &def;
 
-	for (i = 0; r[i] && i < len; i++, t += o) {
-		style = styledefns + *t;
-		p = _string(dst, Pt(pt.x, pt.y + ascent - style->font->ascent), style->src, style->sp,
-				style->font, 0, r + i, 1, clipr, style->bg, style->bgp, op);
-		pt.x = p.x;
+	// FIXME: Should aggregate sequences of letters of identical style.
+	// High-road path is to push this all the way to devdraw.
+	if (s) {
+		for (i = 0; i < len; i++, t += o, s += w) {
+			if((rw = *s) < Runeself)
+				w = 1;
+			else
+				w = chartorune(&rw, (char*)s);
+			style = styledefns + *t;
+			p = _string(dst, Pt(pt.x, pt.y + mheight - style->font->ascent), style->src, style->sp,
+					style->font, s, 0, 1, clipr, bg, bgp, op);
+			pt.x = p.x;
+		}
+	} else {
+		for (i = 0; r[i] && i < len; i++, t += o) {
+			style = styledefns + *t;
+			p = _string(dst, Pt(pt.x, pt.y + mheight - style->font->ascent), style->src, style->sp,
+					style->font, 0, r + i, 1, clipr, bg, bgp, op);
+			pt.x = p.x;
+		}
 	}
 	return pt;
 }

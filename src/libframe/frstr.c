@@ -7,13 +7,12 @@
 #define	CHUNK	16
 #define	ROUNDUP(n)	((n+CHUNK)&~(CHUNK-1))
 
-// TODO(rjk): Should be uchar * per original
-Rune *
+uchar *
 _frallocstr(Frame *f, unsigned n)
 {
-	Rune *p;
+	uchar *p;
 
-	p = (Rune *)malloc(sizeof(Rune) * ROUNDUP(n));
+	p = malloc(ROUNDUP(n));
 	if(p == 0)
 		drawerror(f->display, "out of memory");
 	return p;
@@ -23,7 +22,7 @@ void
 _frinsure(Frame *f, int bn, unsigned n)
 {
 	Frbox *b;
-	Rune *p;
+	uchar *p;
 	STag* s;
 
 	b = &f->box[bn];
@@ -33,7 +32,7 @@ _frinsure(Frame *f, int bn, unsigned n)
 		return;
 	p = _frallocstr(f, n);
 	b = &f->box[bn];
-	memmove(p, b->ptr, b->nrune * sizeof(Rune));
+	memmove(p, b->ptr, NBYTE(b)+1);
 	free(b->ptr);
 	b->ptr = p;
 	if (b->ptags) {

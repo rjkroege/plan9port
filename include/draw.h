@@ -347,7 +347,7 @@ struct Style
 	Image* 	bg;		/* the background color */
 	Point		bgp;		/* the background color point */
 	Image* 	src;		/* the foreground color */
-	Point		sp;		/* the foreground color point */
+	Point	sp;		/* the foreground color point */
 };
 
 enum{
@@ -494,25 +494,37 @@ extern void	borderop(Image*, Rectangle, int, Image*, Point, Drawop);
  * Styled Strings. Work only with Runes.
  * TODO(rjk): need to revert this presumption.
  */
-extern void 	setstagsforrunerange(STag*, STag, int);
-// FIXME: pending removal.
-extern void 	styledstringverticalmetrics(char*, Rune*, int, STag*, Style*, int*, int*);
-extern Point 	_sstring(Image *dst, Point pt, Rune *r, int len, Rectangle clipr, Drawop op, STag *styletags, Style *styledefns, int ascent);
+// FIXME: Write me.
+// NEW revised API
+/*
+	I need to do something reasonable about ascent. A line of text where the
+	characters have different baselines requires a shared baseline. Insepcting
+	the characters is not sufficient because characters may have different heights
+	and ascents.
 
-extern Point 	srunestringn(Image *dst, Point pt, Rune *r, int len, STag *styletags, Style *styledefns, int ascent);
-extern Point 	srunestring(Image *dst, Point pt, Rune *r, STag *styletags, Style *styledefns, int ascent);
+	The desired position for a single letter is corner + mheight - ascent for character
+*/
+extern Point 	_ystring(Image *dst, Point pt, char *s, Rune *r, int len, Rectangle clipr, Image*, Point, Drawop op, STag 
+*styletags, Style *styledefns, int mheight);
 
-// FIXME: worry about the use of bg for doing highlighting...
-extern Point 	srunestringn(Image *dst, Point pt, Rune *r, int len, STag *styletags, Style *styledefns, int ascent);
-extern Point 	srunestring(Image *dst, Point pt, Rune *r, STag *styletags, Style *styledefns, int ascent);
+extern Point	ystringsize(Font*, char*, STag*, Style*);
 
-// FIXME: implement measurement functions.
-// A high quality refactor is possible.
+/*	Measure the width of the provided character string to its termating
+	null using the specified styles and per-character style selector. */
+extern int	ystringwidth(Style*, char*, STag*);
 
-extern Point	srunestringsize(Rune*, STag*, Style*, int*);
-extern int		srunestringwidth(Rune*, STag*, Style*);
-extern int		srunestringnwidth(Rune*, int, STag*, Style*);
-extern Point	_srunestringnwidth(Rune*, int, STag*, Style*, int*);
+/*	Measure the width of the provided character string for n characters
+	using the specified styles and per-character style selector. */
+extern int	ystringnwidth(Style*, char*, int, STag*);
+
+/*	Like stringnbg but for stYled strings. Places string on common baseline. */
+extern Point	ystringnbg(Image*, Point, Style*, char*, int, Image*, Point, STag*, int);
+
+/*	Like stringbg but for stYled strings. Places string on common baseline. */
+extern Point	ystringbg(Image*, Point, Style*, char*, Image*, Point, STag*, int);
+
+// END of NEW
+
 
 /*
  * Font management

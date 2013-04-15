@@ -38,12 +38,12 @@ frselect(Frame *f, Mousectl *mc)	/* when called, button 1 is down */
 		scrled = 0;
 		if(f->scroll){
 			if(mp.y < f->r.min.y){
-				(*f->scroll)(f, -(f->r.min.y-mp.y)/(int)f->font->height-1);
+				(*f->scroll)(f, -(f->r.min.y-mp.y)/(int)f->mheight-1);
 				p0 = f->p1;
 				p1 = f->p0;
 				scrled = 1;
 			}else if(mp.y > f->r.max.y){
-				(*f->scroll)(f, (mp.y-f->r.max.y)/(int)f->font->height+1);
+				(*f->scroll)(f, (mp.y-f->r.max.y)/(int)f->mheight+1);
 				p0 = f->p0;
 				p1 = f->p1;
 				scrled = 1;
@@ -102,42 +102,28 @@ frselect(Frame *f, Mousectl *mc)	/* when called, button 1 is down */
 	}while(mc->m.buttons == b);
 }
 
-
 void
 frselectpaint(Frame *f, Point p0, Point p1, Image *col)
 {
-	frsselectpaint(f, p0, p1, col, f->font->height, f->font->height);
-}
-
-
-/*
-	This needs to be modified. It clears the deleted content.
-	In the current usage, it draws a box that's too short. This is easily fixed. But really, we ought
-	to be more clever?
-
-	recode in terms of h0, h1.
-*/
-void
-frsselectpaint(Frame *f, Point p0, Point p1, Image *col, int h0, int h1)
-{
+	int n;
 	Point q0, q1;
 
 	q0 = p0;
 	q1 = p1;
-	q0.y += h0;
-	q1.y += h1;
-
+	q0.y += f->mheight;
+	q1.y += f->mheight;
+	n = (p1.y-p0.y)/f->mheight;
 	if(f->b == nil)
-		drawerror(f->display, "frsselectpaint b==0");
+		drawerror(f->display, "frselectpaint b==0");
 	if(p0.y == f->r.max.y)
 		return;
-	if (p1.y - p0.y < h0)
+	if(n == 0)
 		draw(f->b, Rpt(p0, q1), col, nil, ZP);
 	else{
 		if(p0.x >= f->r.max.x)
 			p0.x = f->r.max.x-1;
 		draw(f->b, Rect(p0.x, p0.y, f->r.max.x, q0.y), col, nil, ZP);
-		if(p1.y - p0.y > h0)
+		if(n > 1)
 			draw(f->b, Rect(f->r.min.x, q0.y, f->r.max.x, p1.y),
 				col, nil, ZP);
 		draw(f->b, Rect(f->r.min.x, p1.y, q1.x, q1.y),
