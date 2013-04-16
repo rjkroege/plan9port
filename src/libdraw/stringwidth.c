@@ -69,25 +69,38 @@ _stringnwidth(Font *f, char *s, Rune *r, int len)
 	return twid;
 }
 
+/* Support for measuring the size of a styled string. */
+/*
+	Optimizations abound: I think that I could end up re-writing all of the Plan9
+	font and character drawing code if I want to efficiently support the drawing
+	of styled text runs.
+*/
 Point
-_srunestringnwidth(Rune* r, int len, STag* st, Style* styledefns, int* ascent)
+_ystringnwidth(Rune* r, char *s,  int len, STag* st, Style* styledefns, int* ascent)
 {
 	Point pt = Pt(0, 0);
-	int asc = 0, o;
+	int asc = 0, o, w;
+	Rune rw;
 	Style *style;
 	STag def = 0;
 	
 	o = (st) ? 1 : 0;
 	st = (st) ? st : &def;
 
-	while( len > 0 && *r){
+	while( len > 0 && (s || r)){
+		if(r || s && ((rw = *s) < Runeself))
+			w = 1;
+		else
+			w = chartorune(&rw, (char*)s);
+
 		// print("%S %d\n", r, *st);
 		style = styledefns + *st;
 		asc = (style->font->ascent > asc) ? style->font->ascent : asc;
 		pt.y = (style->font->height > pt.y) ? style->font->height : pt.y;
-		pt.x += _stringnwidth(style->font, nil, r, 1);
+		pt.x += _stringnwidth(style->font, s, r, 1);
 		len--;
-		r++;
+		r +=  (r) ? w : 0;
+		s += (s) ? w : 0;
 		st += o;
 	}
 	if (ascent) {
@@ -114,20 +127,6 @@ stringsize(Font *f, char *s)
 	return Pt(_stringnwidth(f, s, nil, 1<<24), f->height);
 }
 
-// Styled
-int
-srunestringwidth(Rune *r, STag* tags, Style* styles)
-{
-	return _srunestringnwidth(r, 1<<24, tags, styles, nil).x;
-}
-
-// Styled
-int
-srunestringnwidth(Rune *r, int len,  STag* tags, Style* styles)
-{
-	return _srunestringnwidth(r, len, tags, styles, 0).x;
-}
-
 int
 runestringnwidth(Font *f, Rune *r, int len)
 {
@@ -140,15 +139,21 @@ runestringwidth(Font *f, Rune *r)
 	return _stringnwidth(f, nil, r, 1<<24);
 }
 
-// Styled
+/* Support for styled strings */
 Point
-srunestringsize(Rune *r, STag* tags, Style* styles, int* ascent)
+ystringsize(Style *styles, char *s, STag* stags, int* ascent)
 {
-	return _srunestringnwidth(r, 1<<24, tags, styles, ascent);
+	return _ystringnwidth(nil, s, 1<<24, stags, styles, ascent);
 }
 
-Point
-runestringsize(Font *f, Rune *r)
+int
+ystringwidth(Style* styles, char* s, STag* tags)
 {
-	return Pt(_stringnwidth(f, nil, r, 1<<24), f->height);
+	return _ystringnwidth(nil, s, 1<<24, tags, styles, nil).x;
+}
+
+int
+ystringnwidth(Style* styles, char* s, int len, STag* tags)
+{
+	return _ystringnwidth(nil, s, len, tags, styles, nil).x;
 }

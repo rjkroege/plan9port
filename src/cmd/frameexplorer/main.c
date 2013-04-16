@@ -7,6 +7,8 @@
 #include <cursor.h>
 #include <frame.h>
 
+#include "tests.h"
+
 // lifted from acme
 #define	STACK	65536
 
@@ -55,6 +57,7 @@ void eresized(int new);
 void error(Display *d, char *s);
 void	mousethread(void*);
 void	keyboardthread(void*);
+
 
 // Control logging
 int dumpLotsOfFontificationLogging = 1;
@@ -108,7 +111,8 @@ Font *fonts[NFONT];
 // The list-of-styles
 Style styledefns[NSTYLE];
 
-Rune *codestring = L"main(volatile int argc, char **volatile argv) /* foo */";
+// Obviously, I need to make rs1 through rs3 into UTF-8.
+char *codestring = "main(volatile int argc, char **volatile argv) /* foo */";
 Rune *rs1 = L"Άρχιμήδης";
 Rune *rs2 = L"Москва - Московский международный портал";
 Rune *rs3 = L"くらしの手続きなどの行政サービス案内";
@@ -152,11 +156,12 @@ StyleFrame sframe;
 
 // ------------------- end of the model ---------------------
 
-// Additional test functions.
+// Additional  functions.
+void reFontify(StyleFrame* sframe);
+void insertCharacter(StyleFrame* sframe, Rune r);
 void boringFontifyBufferTest(StyleFrame*);
 void displayFontiffiedBufferTest(Image*, StyleFrame*, Point);
 void dumpTheStyleString(StyleFrame *, int, int);
-
 void tickupdate(Frame*, int /* ticked */);
 
 
@@ -212,7 +217,7 @@ threadmain(volatile int argc, char **volatile argv)
 	styledefns[KEYWORD].sp = ZP;
 	styledefns[KEYWORD].bgp = ZP;
 	
-	tagstringlen = runestrlen(codestring);
+	tagstringlen = strlen(codestring);
 	tagstring = mallocz(tagstringlen, 1);
 
 
@@ -591,8 +596,10 @@ eresized(int new)
 	draw(screen, rectaddpt(Rect(0, 0, 400, 200), Pt(30, 200)), framecols[BACK], nil, ZP);
 
 	// styledstringn(codestring, 0, strlen(codestring), tagstring, styledefns, Pt(150, 50), screen, 0);  // original
-	srunestring(screen, Pt(150, 50), codestring, tagstring, styledefns, 0);
+	// 20 is suspect. I just pulled it out of my bottom
+	ystringbg(screen, Pt(150, 50), styledefns, codestring, tagcols[lcBACK], ZP, tagstring, 20);
 
+#if 0
 	// FIXME: add styles to at least some of these
 	runestring(screen, Pt(450, 50), tagcols[lcGREEN], ZP, fonts[LITTLEFONT], rs1);
 	runestring(screen, Pt(550, 50), tagcols[lcGREEN], ZP, fonts[LITTLEFONT], rs2);
@@ -638,6 +645,7 @@ eresized(int new)
 		print("5 actual size: %d,%d ascent: %d of %S\n", p.x, p.y, w, codestring);
 		print("expected size: 288,28 ascent: 22 \n\n");
 	}
+#endif
 }
 
 void
@@ -745,9 +753,10 @@ void
 displayFontiffiedBufferTest(Image* dst, StyleFrame* sframe, Point p) {
 	int i, o, ascent, height;
 
-	// print("displayFontiffiedBufferTest\n");
+	print("displayFontiffiedBufferTest\n");
 	draw(dst, Rect(500, 200, 900,450), tagcols[lcBACK] , nil, ZP);
 
+#if 0 // TODO(rjkroege) switch to new way
 	for (i  = 0, o = 0; i < sframe->lastr; i++) {
 		if (sframe->larger_buffer[i] == '\n' ) {
 			styledstringverticalmetrics(nil, sframe->larger_buffer + o, i - o, sframe->tagstring, sframe->styledefns,
@@ -759,6 +768,7 @@ displayFontiffiedBufferTest(Image* dst, StyleFrame* sframe, Point p) {
 		}
 	}
 	srunestringn(dst, p, sframe->larger_buffer + o, i - o, sframe->tagstring + o, sframe->styledefns, 0);
+#endif
 }
 
 /*
@@ -768,11 +778,13 @@ displayFontiffiedBufferTest(Image* dst, StyleFrame* sframe, Point p) {
 */
 void
 tickupdate(Frame* f, int ticked) {
+#if 0
 	Point p;
 	int h;
 	if (f->p0 == f->p1) {
 		p = _frsptofcharh(f, f->p0, &h);
 		frstick(f, p, ticked, h);
 	}
+#endif
 }
 

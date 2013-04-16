@@ -119,6 +119,7 @@ frsinit(Frame *f, Rectangle r, Style* sdefns, int sc, Image *b, Image *cols[NCOL
 	f->msc = (sc > NSTYLE) ?  NSTYLE: sc ;
 	f->styles = sdefns;
 
+print("frsinit 1\n");
 	f->mheight = 0;
 	for (i = 0, s = f->styles; i < f->msc; i++, s++)
 		f->mheight = (s->font->height > f->mheight) ? s->font->height : f->mheight;
@@ -129,6 +130,7 @@ frsinit(Frame *f, Rectangle r, Style* sdefns, int sc, Image *b, Image *cols[NCOL
 	frsetrects(f, r, b);
 	if(f->tick==nil && f->cols[BACK]!=0)
 		frinittick(f);
+print("frsinit 2\n");
 	
 	// TODO(rjk): note need to do something better with background color
 	// Colour fallback
@@ -137,5 +139,6 @@ frsinit(Frame *f, Rectangle r, Style* sdefns, int sc, Image *b, Image *cols[NCOL
 		if (sdefns->src == 0)
 			sdefns->src = f->cols[TEXT];
 	}
+print("frsinit end\n");
 
 }

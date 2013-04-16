@@ -57,6 +57,8 @@ runestringnop(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r, int 
 
 /*	Support for styled strings. */
 // There may remain issues associated with background drawing.
+// TODO(rjkroege): Lots of optimizations possible.
+// TODO(rjkroege): Am I doing the right thing with runes?
 Point
 _ystring(Image *dst, Point pt, char *s, Rune *r, int len, Rectangle clipr, Image* bg, Point bgp, Drawop op, STag *t, Style *styledefns, int mheight)
 {
