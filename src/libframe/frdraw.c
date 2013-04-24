@@ -17,7 +17,7 @@ _frdrawtext(Frame *f, Point pt, Image *text, Image *back)
 		_frcklinewrap(f, &pt, b);
 		if(!f->noredraw && b->nrune >= 0)
 			// ystringbg(f->b, pt, text, ZP, f->font, (char*)b->ptr, back, ZP);
-			 ystringbg(f->b, pt, f->styles, (char*)b->ptr, back, ZP, b->ptags, f->mheight);
+			 ystringbg(f->b, pt, f->styles, (char*)b->ptr, back, ZP, b->ptags, f->mheight, f->mascent);
 		pt.x += b->wid;
 	}
 }
@@ -106,8 +106,8 @@ frdrawsel0(Frame *f, Point pt, ulong p0, ulong p1, Image *back, Image *text)
 			// There is a "selected" and "unselected" state. This not really doing the right
 			// thing. In particular: there is one selected colour for foreeground + background
 			// but this is mixed-in with the font in a bad way. Bg, Fg should be part of the style
-			// but should always have the selection alternative?
-			ystringnbg(f->b, pt, f->styles, ptr, nr, back, ZP, b->ptags, f->mheight);
+			// but should always have the selection alternative?				
+			ystringnbg(f->b, pt, f->styles, ptr, nr, back, ZP, b->ptags, f->mheight, f->mascent);
 		pt.x += w;
 	    Continue:
 		b++;

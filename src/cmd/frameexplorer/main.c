@@ -19,8 +19,8 @@ enum {
 	// DEFAULTSTYLE,
 	BOLD = 1,
 	COMMENT = 2,
-	TODO = 3,
-	KEYWORD = 4,
+	KEYWORD = 3,
+	TODO = 4,
 	TYPE = 5,
 	FNAME = 6,
 	FCALL =  7,
@@ -216,6 +216,9 @@ threadmain(volatile int argc, char **volatile argv)
 	styledefns[KEYWORD].bg = nil;
 	styledefns[KEYWORD].sp = ZP;
 	styledefns[KEYWORD].bgp = ZP;
+
+	print("last style: %d\n", styledefns[KEYWORD].font);
+
 	
 	tagstringlen = strlen(codestring);
 	tagstring = mallocz(tagstringlen, 1);
@@ -228,16 +231,19 @@ threadmain(volatile int argc, char **volatile argv)
 	setstagsforrunerange(tagstring + 14, KEYWORD, 3);
 	setstagsforrunerange(tagstring + 46, COMMENT, 9);
 	setstagsforrunerange(tagstring + 0, BOLD, 4);
+	print("last style: %d\n", styledefns[KEYWORD].font);
 
 	// Japanese styling
 	rs3_len = runestrlen(rs3);
 	rs3_tags = mallocz(tagstringlen, 1);
+	print("last style: %d\n", styledefns[KEYWORD].font);
 
 	// Japanese styling
 	rs3_len = runestrlen(rs3);
 	rs3_tags = mallocz(tagstringlen, 1);
 	setstagsforrunerange(rs3_tags + 4, BOLD, 4);
 	setstagsforrunerange(rs3_tags + 14, BOLD, 4);
+	print("last style: %d\n", styledefns[KEYWORD].font);
 	
 	// need colors
 	// adjust the conflicting enum above.
@@ -247,6 +253,8 @@ threadmain(volatile int argc, char **volatile argv)
 	framecols[TEXT] = display->black;
 	framecols[HTEXT] = display->black;
 
+	print("last style, before frsinit: %ld\n", styledefns[KEYWORD].font);
+	print("keyword: %d\n", KEYWORD);
 	// make the frame.
 	frsinit(&sframe.frame, rectaddpt(Rect(0, 0, 400, 200), Pt(30, 200)),
 			styledefns, 4, screen, framecols);
@@ -260,6 +268,7 @@ threadmain(volatile int argc, char **volatile argv)
 
 	// Run unit tests on Frame.
 	runAllTests(&sframe.frame);
+	print("after runAllTests\n");
 
 	// cribbed from acme
 	mousectl = initmouse(nil, screen);
@@ -465,6 +474,7 @@ reFontify(StyleFrame* sframe)
 void
 insertCharacter(StyleFrame* sframe, Rune r)
 {
+print("insertCharacter start\n");
 	Point tp;
 	Frame *f = &(sframe->frame);
 	// append runes to the text model 
@@ -506,9 +516,11 @@ insertCharacter(StyleFrame* sframe, Rune r)
 	sframe->lastr++;
 	sframe->point++;
 
+print("insertCharacter pre frsinsert\n");
 	frsinsert(f, sframe->larger_buffer + sframe->point -1,
 			sframe->larger_buffer + sframe->point, sframe->tagstring + sframe->point - 1,
 			sframe->point - 1 - sframe->forg);
+print("insertCharacter post frsinsert\n");
 
 	/*
 		FIXME: we insert twice.  We could fix this in the
@@ -526,6 +538,7 @@ insertCharacter(StyleFrame* sframe, Rune r)
 
 	tp = frptofchar(f, sframe->frame.p1);
 	print("point of char %d: (%d, %d)\n", sframe->frame.p1, tp.x, tp.y);
+print("insertCharacter end\n");
 }
 
 void
@@ -575,7 +588,7 @@ void
 eresized(int new)
 {
 	int ascent;
-	Point p;
+	Point p, p2;
 	int w;
 	if(new && getwindow(display, Refnone) < 0)
 		error(display, "can't reattach to window");
@@ -588,6 +601,7 @@ eresized(int new)
 	draw(screen, Rect(300, 300,350,350),tagcols[lcBACK] , nil, ZP);
 	draw(screen, Rect(500, 200, 900,450), tagcols[lcBACK] , nil, ZP);
 
+print("eresized 1\n");
 	// This has become increasingly superfluous?
 	p = string(screen, Pt(100, 100), display->black, ZP, fonts[LITTLEFONT] ,
 			"The quick brown fox");
@@ -595,18 +609,38 @@ eresized(int new)
 	
 	draw(screen, rectaddpt(Rect(0, 0, 400, 200), Pt(30, 200)), framecols[BACK], nil, ZP);
 
+print("eresized 2\n");
 	// styledstringn(codestring, 0, strlen(codestring), tagstring, styledefns, Pt(150, 50), screen, 0);  // original
-	// 20 is suspect. I just pulled it out of my bottom
-	ystringbg(screen, Pt(150, 50), styledefns, codestring, tagcols[lcBACK], ZP, tagstring, 20);
 
-#if 0
-	// FIXME: add styles to at least some of these
+	p2 = ystringsize(styledefns, codestring, tagstring, &ascent);
+	 ystringbg(screen, Pt(150, 50), styledefns, codestring, tagcols[lcBACK], ZP, tagstring, p2.y, ascent);
+print("eresized 3\n");
+
 	runestring(screen, Pt(450, 50), tagcols[lcGREEN], ZP, fonts[LITTLEFONT], rs1);
 	runestring(screen, Pt(550, 50), tagcols[lcGREEN], ZP, fonts[LITTLEFONT], rs2);
-	// runestring(screen, Pt(450, 90), tagcols[lcBACK], ZP, fonts[BIGFONT], rs3);
-	srunestring(screen, Pt(450, 90), rs3, rs3_tags, styledefns, 0);
+	runestring(screen, Pt(450, 90), tagcols[lcBACK], ZP, fonts[BIGFONT], rs3);
+
+	// make the buffer into a character buffer.
+	{
+		int i, len, w;
+		Rune* r;
+		char* cs = (char*)malloc(len = runenlen(rs3 , rs3_len));
+		char* s;
+		for (i=0, r = rs3, s = cs; i < rs3_len; i++, s+=w, r++) {
+			w = runetochar(s, r);
+		}
+print("eresized 4\n");
+		p2 = ystringsize(styledefns, cs, rs3_tags, &ascent);
+		ystringbg(screen, Pt(450, 90), styledefns, cs,  tagcols[lcBACK], ZP, rs3_tags, p2.y, ascent);
+//		srunestring(screen, Pt(450, 90), rs3, rs3_tags, styledefns, 0);
+
+		free(cs);
+	}
+print("eresized 5\n");
 
 	flushimage(display, 1);
+
+#if 0
 
 	// Unit tests for libdraw changes here.
 	// Will want to measure the styled.

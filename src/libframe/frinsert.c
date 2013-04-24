@@ -32,6 +32,7 @@ bxscan(Frame *f, Rune *sp, Rune *ep, Point *ppt, STag* sstp)
 	frame.styles = f->styles;
 	frame.defaultstyle = f->defaultstyle;
 	frame.mheight = f->mheight;
+	frame.mascent = f->mascent;
 	frame.msc = f->msc;
 
 	delta = DELTA;
@@ -78,7 +79,7 @@ bxscan(Frame *f, Rune *sp, Rune *ep, Point *ppt, STag* sstp)
 				// FIXME: I believe that using nr here is correct. However...
 				// I should assert this appropriately.
 				b->ptags = _fralloctags(f, nr);
-				memmove(b->ptags, starttp, nr * sizeof(STag));
+				memmove(b->ptags, sstp, nr * sizeof(STag));
 			} else {
 				b->ptags = 0;
 			}

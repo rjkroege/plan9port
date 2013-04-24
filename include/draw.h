@@ -504,7 +504,7 @@ extern void	borderop(Image*, Rectangle, int, Image*, Point, Drawop);
 
 	The desired position for a single letter is corner + mheight - ascent for character
 */
-extern Point 	_ystring(Image *dst, Point pt, char *s, Rune *r, int len, Rectangle clipr, Image*, Point, Drawop op, STag *styletags, Style *styledefns, int mheight);
+extern Point 	_ystring(Image *dst, Point pt, char *s, Rune *r, int len, Rectangle clipr, Image*, Point, Drawop op, STag *styletags, Style *styledefns, int mheight, int mascent);
 
 /* Measures the containing box and ascent of the specified styled string. */
 Point _ystringnwidth(Rune*, char *,  int, STag*, Style*, int*);
@@ -520,10 +520,10 @@ extern int	ystringwidth(Style*, char*, STag*);
 extern int	ystringnwidth(Style*, char*, int, STag*);
 
 /*	Like stringnbg but for stYled strings. Places string on common baseline. */
-extern Point	ystringnbg(Image*, Point, Style*, char*, int, Image*, Point, STag*, int);
+extern Point	ystringnbg(Image*, Point, Style*, char*, int, Image*, Point, STag*, int, int);
 
 /*	Like stringbg but for stYled strings. Places string on common baseline. */
-extern Point	ystringbg(Image*, Point, Style*, char*, Image*, Point, STag*, int);
+extern Point	ystringbg(Image*, Point, Style*, char*, Image*, Point, STag*, int, int);
 
 /*	Set styles on multiple positions at once. */
 void setstagsforrunerange(STag *styletags, STag style, int lr);

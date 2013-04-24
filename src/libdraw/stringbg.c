@@ -52,11 +52,11 @@ runestringnbgop(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r, in
 
 // Styled
 Point
-ystringnbg(Image* dst, Point pt, Style*styledefns, char*s, int len, Image*bg, Point bgp, STag* t, int mheight) {
-	return _ystring(dst, pt, s, nil, len, dst->clipr, bg, bgp, SoverD, t, styledefns, mheight);
+ystringnbg(Image* dst, Point pt, Style*styledefns, char*s, int len, Image*bg, Point bgp, STag* t, int mheight, int mascent) {
+	return _ystring(dst, pt, s, nil, len, dst->clipr, bg, bgp, SoverD, t, styledefns, mheight, mascent);
 }
 
 Point
-ystringbg(Image* dst, Point pt, Style*styledefns, char*s, Image*bg, Point bgp, STag* t, int mheight) {
-	return _ystring(dst, pt, s, nil, 1<<24, dst->clipr, bg, bgp, SoverD, t, styledefns, mheight);
+ystringbg(Image* dst, Point pt, Style*styledefns, char*s, Image*bg, Point bgp, STag* t, int mheight, int mascent) {
+	return _ystring(dst, pt, s, nil, 1<<24, dst->clipr, bg, bgp, SoverD, t, styledefns, mheight, mascent);
 }

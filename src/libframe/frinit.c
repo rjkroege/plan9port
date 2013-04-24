@@ -104,6 +104,11 @@ frsinit(Frame *f, Rectangle r, Style* sdefns, int sc, Image *b, Image *cols[NCOL
 	int i;
 	Style *s;
 
+	fprint(2,"hello......\n");
+
+	fprint(2,"s: %ld\n", sdefns[0].font);
+	fprint(2,"s: %ld\n", sdefns[3].font);
+
 	f->display = b->display;
 
 	// widest? default font?
@@ -121,9 +126,15 @@ frsinit(Frame *f, Rectangle r, Style* sdefns, int sc, Image *b, Image *cols[NCOL
 
 print("frsinit 1\n");
 	f->mheight = 0;
-	for (i = 0, s = f->styles; i < f->msc; i++, s++)
+	f->mascent = 0;
+	for (i = 0, s = f->styles; i < f->msc; i++, s++) {
+		print("i: %d, %d\n", i, f->msc);
+		print("s: %d\n", s->font);
 		f->mheight = (s->font->height > f->mheight) ? s->font->height : f->mheight;
+		f->mascent = (s->font->ascent > f->mascent) ? s->font->ascent : f->mascent;
+            }
 
+print("frsinit 1.1\n");
 	// Might need to adjust this?
 	if(cols != 0)
 		memmove(f->cols, cols, sizeof f->cols);

@@ -87,7 +87,7 @@ _ystringnwidth(Rune* r, char *s,  int len, STag* st, Style* styledefns, int* asc
 	o = (st) ? 1 : 0;
 	st = (st) ? st : &def;
 
-	while( len > 0 && (s || r)){
+	while( len > 0 && (s && *s || r && *r)){
 		if(r || s && ((rw = *s) < Runeself))
 			w = 1;
 		else

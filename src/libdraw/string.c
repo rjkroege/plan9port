@@ -60,7 +60,7 @@ runestringnop(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r, int 
 // TODO(rjkroege): Lots of optimizations possible.
 // TODO(rjkroege): Am I doing the right thing with runes?
 Point
-_ystring(Image *dst, Point pt, char *s, Rune *r, int len, Rectangle clipr, Image* bg, Point bgp, Drawop op, STag *t, Style *styledefns, int mheight)
+_ystring(Image *dst, Point pt, char *s, Rune *r, int len, Rectangle clipr, Image* bg, Point bgp, Drawop op, STag *t, Style *styledefns, int mheight, int mascent)
 {
 	Style *style;
 	Point p;
@@ -71,23 +71,30 @@ _ystring(Image *dst, Point pt, char *s, Rune *r, int len, Rectangle clipr, Image
 	o = (t) ? 1 : 0;
 	t = (t) ? t : &def;
 
+	// Not all character cells will paint the entire background which
+	// will leave little ugly pixel damages.
+           p =  _ystringnwidth(r, s, len, t, styledefns, nil);
+	draw(dst, Rect(pt.x, pt.y, pt.x + p.x, pt.y + mheight), bg, nil, bgp);
+
 	// FIXME: Should aggregate sequences of letters of identical style.
 	// High-road path is to push this all the way to devdraw.
 	if (s) {
-		for (i = 0; i < len; i++, t += o, s += w) {
+		print("_ystring: s != 0\n");
+		for (i = 0; i < len && *s; i++, t += o, s += w) {
+			print("_ystring: %d %d\n", i, len);
 			if((rw = *s) < Runeself)
 				w = 1;
 			else
 				w = chartorune(&rw, (char*)s);
 			style = styledefns + *t;
-			p = _string(dst, Pt(pt.x, pt.y + mheight - style->font->ascent), style->src, style->sp,
+			p = _string(dst, Pt(pt.x, pt.y + mascent - style->font->ascent), style->src, style->sp,
 					style->font, s, 0, 1, clipr, bg, bgp, op);
 			pt.x = p.x;
 		}
 	} else {
 		for (i = 0; r[i] && i < len; i++, t += o) {
 			style = styledefns + *t;
-			p = _string(dst, Pt(pt.x, pt.y + mheight - style->font->ascent), style->src, style->sp,
+			p = _string(dst, Pt(pt.x, pt.y + mascent - style->font->ascent), style->src, style->sp,
 					style->font, 0, r + i, 1, clipr, bg, bgp, op);
 			pt.x = p.x;
 		}

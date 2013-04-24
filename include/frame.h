@@ -54,6 +54,7 @@ struct Frame
 	int			noredraw;	/* don't draw on the screen */
 	int			tickscale;	/* tick scaling factor */
 	int			mheight;		/* maximum height across any particular style */
+	int			mascent;	/* maximum ascent across any particular style */
 	int			msc;		/* maxium valid stye tag value */
 	Style*		styles;		 /* Pointer to array of styles */
 	Style		defaultstyle;	 /* Single style for unstyled frames */
