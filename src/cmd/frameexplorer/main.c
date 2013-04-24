@@ -812,13 +812,12 @@ displayFontiffiedBufferTest(Image* dst, StyleFrame* sframe, Point p) {
 */
 void
 tickupdate(Frame* f, int ticked) {
-#if 0
 	Point p;
 	int h;
 	if (f->p0 == f->p1) {
-		p = _frsptofcharh(f, f->p0, &h);
-		frstick(f, p, ticked, h);
+		p = frptofchar(f, f->p0);
+		frtick(f, p, ticked);
 	}
-#endif
 }
+
 

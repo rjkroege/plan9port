@@ -75,11 +75,6 @@ void	frredraw(Frame*);
 
 void frsinsert(Frame*, Rune*, Rune*, STag*, ulong);
 void frsinit(Frame*, Rectangle, Style*, int sc, Image*, Image** cols);
-// void	frstick(Frame*, Point, int, int);
-Point _frsptofchar(Frame*, ulong, int*, int);
-Point _frsptofcharh(Frame*, ulong, int*);
-// What is this function for and why is it different?
-void frsselectpaint(Frame*, Point, Point, Image*, int, int);
 void _frdiagdump(Frame *f);
 
 uchar*	_frallocstr(Frame*, unsigned);
