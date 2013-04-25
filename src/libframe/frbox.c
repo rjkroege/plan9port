@@ -115,13 +115,13 @@ void
 truncatebox(Frame *f, Frbox *b, int n)	/* drop last n chars; no allocation done */
 {
 	print("truncatebox dropping %d\n", n);
-	print("before: <%0.*S>\n", b->nrune, b->ptr);
+	print("before: <%0.*s>\n", b->nrune, b->ptr);
 	if(b->nrune<0 || b->nrune<n)
 		drawerror(f->display, "truncatebox");
 	b->nrune -= n;
 	runeindex(b->ptr, b->nrune)[0] = 0;
 	b->wid = ystringnwidth(f->styles, (char*)b->ptr, b->nrune, b->ptags);
-	print("after: <%0.*S>\n", b->nrune, b->ptr);
+	print("after: <%0.*s>\n", b->nrune, b->ptr);
 }
 
 static
@@ -131,7 +131,7 @@ chopbox(Frame *f, Frbox *b, int n)	/* drop first n chars; no allocation done */
 	uchar *p;
 
 	print("chopbox dropping %d\n", n);
-	print("before: <%0.*S>\n", b->nrune, b->ptr);
+	print("before: <%0.*s>\n", b->nrune, b->ptr);
 	if(b->nrune<0 || b->nrune<n)
 		drawerror(f->display, "chopbox");
 	p = (uchar*)runeindex(b->ptr, n);
@@ -140,7 +140,7 @@ chopbox(Frame *f, Frbox *b, int n)	/* drop first n chars; no allocation done */
 	if (b->ptags)
 		memmove(b->ptags, b->ptags + n, sizeof(STag) * b->nrune);
 	b->wid = ystringnwidth(f->styles, (char*)b->ptr, b->nrune, b->ptags);
-	print("after: <%0.*S>\n", b->nrune, b->ptr);
+	print("after: <%0.*s>\n", b->nrune, b->ptr);
 }
 
 void

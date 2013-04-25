@@ -112,7 +112,7 @@ _frdiagdump(Frame *f)
 	print("nbox: %d\tp0: %d\tp1: %d\n", f->nbox, f->p0, f->p1);
 	for (i = 0, b = &f->box[0]; i < f->nbox; i++, b++) {
 		if (b->nrune > -1)
-			print("\t[%d]: wid: %d\tminwid: %d\tnrune: %d,\t<%0.*S>\n",
+			print("\t[%d]: wid: %d\tminwid: %d\tnrune: %d,\t<%0.*s>\n",
 				i, b->wid, b->minwid, b->nrune, b->nrune, b->ptr);
 		else
 			print("\t[%d]: wid: %d\tminwid: %d\tnrune: %d\n",
