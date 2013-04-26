@@ -68,13 +68,13 @@ _ystring(Image *dst, Point pt, char *s, Rune *r, int len, Rectangle clipr, Image
 	STag def = 0;
 	Rune rw;
 	
-	o = (t) ? 1 : 0;
-	t = (t) ? t : &def;
-
 	// Not all character cells will paint the entire background which
 	// will leave little ugly pixel damages.
            p =  _ystringnwidth(r, s, len, t, styledefns, nil);
 	draw(dst, Rect(pt.x, pt.y, pt.x + p.x, pt.y + mheight), bg, nil, bgp);
+
+	o = (t) ? 1 : 0;
+	t = (t) ? t : &def;
 
 	// FIXME: Should aggregate sequences of letters of identical style.
 	// High-road path is to push this all the way to devdraw.

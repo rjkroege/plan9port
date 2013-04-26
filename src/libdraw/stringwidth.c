@@ -93,7 +93,7 @@ _ystringnwidth(Rune* r, char *s,  int len, STag* st, Style* styledefns, int* asc
 		else
 			w = chartorune(&rw, (char*)s);
 
-		// print("%S %d\n", r, *st);
+		print("%d %c  %d\n",  o, *s, *st);
 		style = styledefns + *st;
 		asc = (style->font->ascent > asc) ? style->font->ascent : asc;
 		pt.y = (style->font->height > pt.y) ? style->font->height : pt.y;
