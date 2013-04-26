@@ -30,6 +30,7 @@ frinit(Frame *f, Rectangle r, Font *ft, Image *b, Image *cols[NCOL])
 	f->styles->src = f->cols[TEXT];
 	f->styles->sp = ZP;
 	f->mheight = ft->height;
+	f->mascent = ft->ascent;
 
 	frsetrects(f, r, b);
 	if(f->tick==nil && f->cols[BACK]!=0)
