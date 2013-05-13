@@ -29,7 +29,6 @@ _frcanfit(Frame *f, Point pt, Frbox *b)
 		else
 			w = chartorune(&r, (char*)p);
 		left  -= ystringnwidth(f->styles, (char*)p, 1, b->ptags + nr);
-		print("\tnew left %d\n", left);
 		if(left < 0)
 			return nr;
 	}

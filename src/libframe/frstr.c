@@ -46,7 +46,6 @@ _frinsure(Frame *f, int bn, unsigned n)
 STag*
 _fralloctags(Frame* f, unsigned n)
 {
-	print("_fralloctags %d\n", n);
 	STag* s;
 	s = (STag*)malloc(sizeof(STag) * ROUNDUP(n));
 	if (s == 0)

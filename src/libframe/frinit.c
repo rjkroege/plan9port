@@ -105,13 +105,7 @@ frsinit(Frame *f, Rectangle r, Style* sdefns, int sc, Image *b, Image *cols[NCOL
 	int i;
 	Style *s;
 
-	fprint(2,"hello......\n");
-
-	fprint(2,"s: %ld\n", sdefns[0].font);
-	fprint(2,"s: %ld\n", sdefns[3].font);
-
 	f->display = b->display;
-
 	// widest? default font?
 	f->maxtab = 8*stringwidth(sdefns[DEFAULTSTYLE].font, "0");
 	f->nbox = 0;
@@ -124,8 +118,6 @@ frsinit(Frame *f, Rectangle r, Style* sdefns, int sc, Image *b, Image *cols[NCOL
 	f->lastlinefull = 0;
 	f->msc = (sc > NSTYLE) ?  NSTYLE: sc ;
 	f->styles = sdefns;
-
-print("frsinit 1\n");
 	f->mheight = 0;
 	f->mascent = 0;
 	for (i = 0, s = f->styles; i < f->msc; i++, s++) {
@@ -135,14 +127,12 @@ print("frsinit 1\n");
 		f->mascent = (s->font->ascent > f->mascent) ? s->font->ascent : f->mascent;
             }
 
-print("frsinit 1.1\n");
 	// Might need to adjust this?
 	if(cols != 0)
 		memmove(f->cols, cols, sizeof f->cols);
 	frsetrects(f, r, b);
 	if(f->tick==nil && f->cols[BACK]!=0)
 		frinittick(f);
-print("frsinit 2\n");
 	
 	// TODO(rjk): note need to do something better with background color
 	// Colour fallback
@@ -151,6 +141,4 @@ print("frsinit 2\n");
 		if (sdefns->src == 0)
 			sdefns->src = f->cols[TEXT];
 	}
-print("frsinit end\n");
-
 }

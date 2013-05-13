@@ -63,7 +63,6 @@ bxscan(Frame *f, Rune *sp, Rune *ep, Point *ppt, STag* sstp)
 				rw = runetochar(s, sp);
 				if(s+rw >= tmp+TMPSIZE)
 					break;
-				print("bxinsert measuring rune <%C> \n", *sp);
 				w += yrunestringnwidth(f->styles, sp, 1, sstp);
 				sp++;
 				sstp += sstp ? 1 : 0;;
@@ -85,10 +84,8 @@ bxscan(Frame *f, Rune *sp, Rune *ep, Point *ppt, STag* sstp)
 			b->nrune = nr;
 			frame.nchars += nr;
 		}
-		print("bxscan: end of loop: b->wid %d b->nrune %d\n", b->wid, b->nrune);
 	}
-	print("bxscan: before _frcklinewrap0,  ppt.x: %d ppt.y: %d\n", ppt->x, ppt->y);
-	// We measure the box multiple times. Why? Optimization opportunity.
+	/*We measure the box multiple times. Why? Optimization opportunity. */
 	_frcklinewrap0(f, ppt, &frame.box[0]);
 	return _frdraw(&frame, *ppt);
 }
@@ -146,9 +143,7 @@ frsinsert(Frame* f, Rune* sp, Rune* ep, STag* sps, ulong p0)
 	pt0 = _frptofcharnb(f, p0, n0);
 	ppt0 = pt0;
 	opt0 = pt0;
-	print("frinsert: before bxscan\n");
 	pt1 = bxscan(f, sp, ep, &ppt0, sps);
-	print("frsinert: after bxscan\n");
 	ppt1 = pt1;
 	if(n0 < f->nbox){
 		_frcklinewrap(f, &pt0, b = &f->box[n0]);	/* for frdrawsel() */

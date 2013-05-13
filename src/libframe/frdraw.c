@@ -185,10 +185,7 @@ _frdraw(Frame *f, Point pt)
 	Frbox *b;
 	int nb, n;
 
-	print("_frdraw\n");
-
 	for(b=f->box,nb=0; nb<f->nbox; nb++, b++){
-		print("_frdraw: first _frcklinewrap0\n");
 		_frcklinewrap0(f, &pt, b);
 		if(pt.y == f->r.max.y){
 			f->nchars -= _frstrlen(f, nb);
@@ -196,12 +193,10 @@ _frdraw(Frame *f, Point pt)
 			break;
 		}
 		if(b->nrune > 0){
-			print("_frdraw:  _frcanfit\n");
 			n = _frcanfit(f, pt, b);
 			if(n == 0)
 				break;
 			if(n != b->nrune){
-				print("_frdraw: calling _frsplitbox, n: %d\n", n);
 				_frsplitbox(f, nb, n);
 				b = &f->box[nb];
 			}
