@@ -1,0 +1,15 @@
+#!//usr/local/plan9/bin/rc
+
+PLAN9=$home/tools/plan9
+# for the moment
+devdrawretina = ()
+
+rm $PLAN9/lib/libdraw.a $PLAN9/lib/libframe.a
+@{ cd $PLAN9/src/libdraw ; mk install } && \
+     @{ cd $PLAN9/src/libframe ; mk install } && \
+    mk clean &&\
+    mk &&\
+    cd .  &&\
+    ./o.frameexplorer
+
+
