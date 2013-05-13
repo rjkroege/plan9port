@@ -79,9 +79,9 @@ _ystring(Image *dst, Point pt, char *s, Rune *r, int len, Rectangle clipr, Image
 	// FIXME: Should aggregate sequences of letters of identical style.
 	// High-road path is to push this all the way to devdraw.
 	if (s) {
-		print("_ystring: s != 0\n");
+		// print("_ystring: s != 0\n");
 		for (i = 0; i < len && *s; i++, t += o, s += w) {
-			print("_ystring: %d %d\n", i, len);
+			// print("_ystring: %d %d\n", i, len);
 			if((rw = *s) < Runeself)
 				w = 1;
 			else

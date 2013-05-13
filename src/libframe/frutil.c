@@ -4,11 +4,18 @@
 #include <mouse.h>
 #include <frame.h>
 
+/*
+	We call this routine too many times. I think that it should cache its result.
+*/
 int
 _frcanfit(Frame *f, Point pt, Frbox *b)
 {
 	int left, w, nr;
 	uchar *p;
+	Rune r;
+
+	// print("_fcanfit: box has styles: %d\n", b->ptags != 0);
+	// print("_fcanfit: pt.x  %d pt.y %d,  r.max.x: %d r.max.y: %d\n", pt.x, pt.y, f->r.max.x, f->r.max.y);
 
 	left = f->r.max.x-pt.x;
 	if(b->nrune < 0)
@@ -16,7 +23,13 @@ _frcanfit(Frame *f, Point pt, Frbox *b)
 	if(left >= b->wid)
 		return b->nrune;
 	for(nr=0,p=b->ptr; *p; p+=w,nr++){
-		left  -= ystringnwidth(f->styles, (char*)p, 1, b->ptags);
+		r = *p;
+		if(r < Runeself)
+			w = 1;
+		else
+			w = chartorune(&r, (char*)p);
+		left  -= ystringnwidth(f->styles, (char*)p, 1, b->ptags + nr);
+		print("\tnew left %d\n", left);
 		if(left < 0)
 			return nr;
 	}

@@ -66,6 +66,7 @@ frdrawsel0(Frame *f, Point pt, ulong p0, ulong p1, Image *back, Image *text)
 	Point qt;
 	uint p;
 	char *ptr;
+	STag* pst;
 
 	p = 0;
 	b = f->box;
@@ -84,10 +85,11 @@ frdrawsel0(Frame *f, Point pt, ulong p0, ulong p1, Image *back, Image *text)
 				draw(f->b, Rect(qt.x, qt.y, f->r.max.x, pt.y), back, nil, qt);
 		}
 		ptr = (char*)b->ptr;
+		pst = b->ptags;
 		if(p < p0){	/* beginning of region: advance into box */
 			ptr += nbytes(ptr, p0-p);
 			nr -= (p0-p);
-			p = p0;
+			pst += (pst) ? p0 - p : 0;
 		}
 		trim = 0;
 		if(p+nr > p1){	/* end of region: trim box */
@@ -97,7 +99,7 @@ frdrawsel0(Frame *f, Point pt, ulong p0, ulong p1, Image *back, Image *text)
 		if(b->nrune<0 || nr==b->nrune)
 			w = b->wid;
 		else
-			w = ystringnwidth(f->styles, ptr, nr, b->ptags);
+			w = ystringnwidth(f->styles, ptr, nr, pst);
 		x = pt.x+w;
 		if(x > f->r.max.x)
 			x = f->r.max.x;
@@ -107,7 +109,7 @@ frdrawsel0(Frame *f, Point pt, ulong p0, ulong p1, Image *back, Image *text)
 			// thing. In particular: there is one selected colour for foreeground + background
 			// but this is mixed-in with the font in a bad way. Bg, Fg should be part of the style
 			// but should always have the selection alternative?				
-			ystringnbg(f->b, pt, f->styles, ptr, nr, back, ZP, b->ptags, f->mheight, f->mascent);
+			ystringnbg(f->b, pt, f->styles, ptr, nr, back, ZP, pst, f->mheight, f->mascent);
 		pt.x += w;
 	    Continue:
 		b++;
@@ -183,7 +185,10 @@ _frdraw(Frame *f, Point pt)
 	Frbox *b;
 	int nb, n;
 
+	print("_frdraw\n");
+
 	for(b=f->box,nb=0; nb<f->nbox; nb++, b++){
+		print("_frdraw: first _frcklinewrap0\n");
 		_frcklinewrap0(f, &pt, b);
 		if(pt.y == f->r.max.y){
 			f->nchars -= _frstrlen(f, nb);
@@ -191,10 +196,12 @@ _frdraw(Frame *f, Point pt)
 			break;
 		}
 		if(b->nrune > 0){
+			print("_frdraw:  _frcanfit\n");
 			n = _frcanfit(f, pt, b);
 			if(n == 0)
 				break;
 			if(n != b->nrune){
+				print("_frdraw: calling _frsplitbox, n: %d\n", n);
 				_frsplitbox(f, nb, n);
 				b = &f->box[nb];
 			}

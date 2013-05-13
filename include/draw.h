@@ -519,6 +519,10 @@ extern int	ystringwidth(Style*, char*, STag*);
 	using the specified styles and per-character style selector. */
 extern int	ystringnwidth(Style*, char*, int, STag*);
 
+/*	Measure the width of the provided Rune string for n runes
+	using the specified styles and per-rune style selector. */
+extern int	yrunestringnwidth(Style*, Rune*, int, STag*);
+
 /*	Like stringnbg but for stYled strings. Places string on common baseline. */
 extern Point	ystringnbg(Image*, Point, Style*, char*, int, Image*, Point, STag*, int, int);
 

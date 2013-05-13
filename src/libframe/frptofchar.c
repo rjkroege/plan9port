@@ -17,7 +17,7 @@ _frptofcharptb(Frame *f, ulong p, Point pt, int bn)
 		_frcklinewrap(f, &pt, b);
 		if(p < (l=NRUNE(b))){
 			if(b->nrune > 0)
-				for(s=b->ptr, t = b->ptags; p>0; s+=w, p--, t++){
+				for(s=b->ptr, t = b->ptags; p>0; s+=w, p--, t += (t) ? 1 : 0){
 					if((r = *s) < Runeself)
 						w = 1;
 					else
@@ -104,7 +104,7 @@ frcharofpt(Frame *f, Point pt)
 						drawerror(f->display, "end of string in frcharofpt");
 					qt.x += ystringnwidth(f->styles, (char*)s, 1, t);
 					s += w;
-					t++;
+					t += (t) ? 1 : 0;
 					if(qt.x > pt.x)
 						break;
 					p++;

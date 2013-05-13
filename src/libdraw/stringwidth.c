@@ -83,7 +83,7 @@ _ystringnwidth(Rune* r, char *s,  int len, STag* st, Style* styledefns, int* asc
 	Rune rw;
 	Style *style;
 	STag def = 0;
-	
+
 	o = (st) ? 1 : 0;
 	st = (st) ? st : &def;
 
@@ -93,7 +93,6 @@ _ystringnwidth(Rune* r, char *s,  int len, STag* st, Style* styledefns, int* asc
 		else
 			w = chartorune(&rw, (char*)s);
 
-		print("%d %c  %d\n",  o, *s, *st);
 		style = styledefns + *st;
 		asc = (style->font->ascent > asc) ? style->font->ascent : asc;
 		pt.y = (style->font->height > pt.y) ? style->font->height : pt.y;
@@ -156,4 +155,11 @@ int
 ystringnwidth(Style* styles, char* s, int len, STag* tags)
 {
 	return _ystringnwidth(nil, s, len, tags, styles, nil).x;
+}
+
+int
+yrunestringnwidth(Style* styles, Rune* r, int len, STag* tags)
+{
+	print("yrunestringnwidth: %X, %X, len: %d, %X\n", styles, r, len, tags);
+	return _ystringnwidth(r, nil, len, tags, styles, nil).x;
 }

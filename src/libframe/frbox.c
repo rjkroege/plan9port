@@ -115,13 +115,13 @@ void
 truncatebox(Frame *f, Frbox *b, int n)	/* drop last n chars; no allocation done */
 {
 	print("truncatebox dropping %d\n", n);
-	print("before: <%0.*s>\n", b->nrune, b->ptr);
+	print("before: <%0.*s> w: %d\n", b->nrune, b->ptr, b->wid);
 	if(b->nrune<0 || b->nrune<n)
 		drawerror(f->display, "truncatebox");
 	b->nrune -= n;
 	runeindex(b->ptr, b->nrune)[0] = 0;
 	b->wid = ystringnwidth(f->styles, (char*)b->ptr, b->nrune, b->ptags);
-	print("after: <%0.*s>\n", b->nrune, b->ptr);
+	print("after: <%0.*s> w: %d\n", b->nrune, b->ptr, b->wid);
 }
 
 static
@@ -131,7 +131,7 @@ chopbox(Frame *f, Frbox *b, int n)	/* drop first n chars; no allocation done */
 	uchar *p;
 
 	print("chopbox dropping %d\n", n);
-	print("before: <%0.*s>\n", b->nrune, b->ptr);
+	print("before: <%0.*s> w: %d\n", b->nrune, b->ptr, b->wid);
 	if(b->nrune<0 || b->nrune<n)
 		drawerror(f->display, "chopbox");
 	p = (uchar*)runeindex(b->ptr, n);
@@ -140,7 +140,7 @@ chopbox(Frame *f, Frbox *b, int n)	/* drop first n chars; no allocation done */
 	if (b->ptags)
 		memmove(b->ptags, b->ptags + n, sizeof(STag) * b->nrune);
 	b->wid = ystringnwidth(f->styles, (char*)b->ptr, b->nrune, b->ptags);
-	print("after: <%0.*s>\n", b->nrune, b->ptr);
+	print("after: <%0.*s> w: %d\n", b->nrune, b->ptr, b->wid);
 }
 
 void
@@ -161,6 +161,7 @@ _frmergebox(Frame *f, int bn)		/* merge bn and bn+1 */
 	strcpy((char*)runeindex(b[0].ptr, b[0].nrune), (char*)b[1].ptr);
 	if (b->ptags)
 		memcpy(b[0].ptags + b[0].nrune, b[1].ptags, (b[1].nrune + 1) * sizeof(STag));
+		/* Why is it +1 here? */
 	b[0].wid += b[1].wid;
 	b[0].nrune += b[1].nrune;
 	_frdelbox(f, bn+1, bn+1);
@@ -171,6 +172,7 @@ _frfindbox(Frame *f, int bn, ulong p, ulong q)	/* find box containing q and put 
 {
 	Frbox *b;
 
+	print("_frfindbox\n");
 	for(b = &f->box[bn]; bn<f->nbox && p+NRUNE(b)<=q; bn++, b++)
 		p += NRUNE(b);
 	if(p != q)

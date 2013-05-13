@@ -14,11 +14,21 @@
 int
 testOne(Frame *f)
 {
+
+	// insert a character.
+	
+	// insert a pair of characters.
+
+	// insert a long sequence of characters
+
 	print("Unimplemented test: fail\n");
 	return 1;
+
 }
 
-
+/*
+	Should I be doing it like this.
+*/
 void
 runAllTests(Frame* f)
 {
@@ -30,4 +40,6 @@ runAllTests(Frame* f)
 		print("FAIL\n");
 		threadexitsall("Test failure");
 	}
+
+	// Clean up before the interactive exploration.
 }
