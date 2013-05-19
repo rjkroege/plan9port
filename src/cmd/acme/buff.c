@@ -16,6 +16,9 @@ enum
 	Slop = 100	/* room to grow with reallocation */
 };
 
+/*
+ * Grows the cache to hold at least n characters.
+*/
 static
 void
 sizecache(Buffer *b, uint n)
@@ -59,6 +62,11 @@ delblock(Buffer *b, uint i)
  * If at very end, q0 will fall on end of cache block.
  */
 
+/*
+ * Flushes the (write-back) cache. Makes it clear that we cache
+ * at most one block at a time. If the cache contents have been
+ * discarded, call delblock to add the block to the free list.
+ */
 static
 void
 flush(Buffer *b)
@@ -72,6 +80,10 @@ flush(Buffer *b)
 	}
 }
 
+/*
+ * Caches a block containing buffer position q0. Note that the cache
+ * holds only a single block at a time.
+*/
 static
 void
 setcache(Buffer *b, uint q0)
@@ -118,6 +130,12 @@ setcache(Buffer *b, uint q0)
 	diskread(disk, bl, b->c, b->cnc);
 }
 
+/*
+ * Inserts n Runes from s at location q0 in the Buffer.
+ * Unlike the lower layers, a Buffer can contain a uint bounded
+ * number of bytes. The cache ends up containing the last inserted
+ * content.
+*/
 void
 bufinsert(Buffer *b, uint q0, Rune *s, uint n)
 {
@@ -199,6 +217,11 @@ bufinsert(Buffer *b, uint q0, Rune *s, uint n)
 	}
 }
 
+/*
+ * Removes the characters [q0, q1) from the Buffer.
+ * setcache will recycle (i.e. return to the free list) any
+ * Blocks that are emptied as a result of performing the removal.
+ */
 void
 bufdelete(Buffer *b, uint q0, uint q1)
 {
@@ -230,6 +253,10 @@ bufloader(void *v, uint q0, Rune *r, int nr)
 	return nr;
 }
 
+/*
+ * Use the provided function f to read from a UTF file and convert its contents
+ * to Runes.
+ */
 uint
 loadfile(int fd, uint q0, int *nulls, int(*f)(void*, uint, Rune*, int), void *arg)
 {
@@ -268,6 +295,10 @@ loadfile(int fd, uint q0, int *nulls, int(*f)(void*, uint, Rune*, int), void *ar
 	return q1-q0;
 }
 
+/*
+ * Uses loadfile and the bufloader file to insert the content of UTF file fd
+ * into the specified Buffer.
+ */
 uint
 bufload(Buffer *b, uint q0, int fd, int *nulls)
 {
@@ -276,6 +307,9 @@ bufload(Buffer *b, uint q0, int fd, int *nulls)
 	return loadfile(fd, q0, nulls, bufloader, b);
 }
 
+/*
+ * Reads n Runes into s from Buffer starting at q0.
+ */
 void
 bufread(Buffer *b, uint q0, Rune *s, uint n)
 {
@@ -294,6 +328,9 @@ bufread(Buffer *b, uint q0, Rune *s, uint n)
 	}
 }
 
+/*
+ * Wipes out the contents of the Buffer.
+ */
 void
 bufreset(Buffer *b)
 {

@@ -31,6 +31,15 @@ tempfile(void)
 	return -1;
 }
 
+/*
+	Creates a new Disk object and opens a temporary file to back
+	this disk.
+
+	I assume that each Disk has a backing file descriptor and
+	hence backing temporary file. (Except that the file is not
+	there. But let's assume that the ORCLOSE simply means that
+	it's not linked anymore.)
+*/
 Disk*
 diskinit()
 {
@@ -45,6 +54,12 @@ diskinit()
 	return d;
 }
 
+
+/*
+
+	Blocks are 
+	
+*/
 static
 uint
 ntosize(uint n, uint *ip)
@@ -62,6 +77,27 @@ ntosize(uint n, uint *ip)
 	return size * sizeof(Rune);
 }
 
+/*
+	Makes a new Block of size n and associates it with the given Disk.
+
+	Blocks vary in size by Blockincr from 1 to 32. It is forbidden to ask for
+	a new Block bigger than 32  Blockincr (8k)
+
+	A given size is rounded to the nearest number of even Blockincr. The Disk
+	struct keeps an array of Block pointers. It is a bucket list. If there is a free
+	Block on the bucket list already of the desired size, unlink from bucket
+	list and return.
+
+	Otherwise, manufacture 100 Blocks in the current Disk and grow that Disk's
+	allocation of size.
+
+	Remember that Block instances don't have any storage themselves. They
+	manage storage kept elsewhere. Backed by tmp files I would think.
+
+	Editorial: why are we doing manual storage management and not letting the
+	kernel do it? This scheme does have the advantage of giving us a variable level
+	of RAM backing via buffer cache.
+*/
 Block*
 disknewblock(Disk *d, uint n)
 {
@@ -91,6 +127,9 @@ disknewblock(Disk *d, uint n)
 	return b;
 }
 
+/*
+	Puts the given block back on the free list.
+ */
 void
 diskrelease(Disk *d, Block *b)
 {
@@ -101,6 +140,10 @@ diskrelease(Disk *d, Block *b)
 	d->free[i] = b;
 }
 
+/*
+	Writes the provided Rune buffer to the Disk's backing temp file.
+	The buffer must fit in a single Block. Returns the block it fits into.
+*/
 void
 diskwrite(Disk *d, Block **bp, Rune *r, uint n)
 {
@@ -120,6 +163,10 @@ diskwrite(Disk *d, Block **bp, Rune *r, uint n)
 	b->u.n = n;
 }
 
+/*
+	Fills the provided Rune buffer r with the contents of block
+	held in the backing disk store.
+*/
 void
 diskread(Disk *d, Block *b, Rune *r, uint n)
 {

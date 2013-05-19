@@ -91,6 +91,7 @@ void		diskrelease(Disk*, Block*);
 void		diskread(Disk*, Block*, Rune*, uint);
 void		diskwrite(Disk*, Block**, Rune*, uint);
 
+/* I presume that nc is the number of Runes in the Buffer. */
 struct Buffer
 {
 	uint	nc;
