@@ -14,28 +14,3 @@ setstagsforrunerange(STag *styletags, STag style, int lr)
 	}
 }
 
-// FIXME: this method needs to vanish with rune measurement.
-// the sstringwidth provides the height + ascent
-void
-styledstringverticalmetrics(char* s, Rune* r, int lr, STag *styletags, Style *styledefns, int *ascent, int *height)
-{
-	Style *style;
-	int i;
-	*ascent = 0;
-	*height = 0;
-
-	if (r) {
-		for (i = 0; r[i] && i < lr; i++) {
-			style = styledefns + styletags[i];
-			*ascent = (style->font->ascent > *ascent) ? style->font->ascent : *ascent;
-			*height = (style->font->height > *height) ? style->font->height : *height;
-		}
-	} else {
-		for (i = 0; s[i] && i < lr; i++) {
-			style = styledefns + styletags[i];
-			*ascent = (style->font->ascent > *ascent) ? style->font->ascent : *ascent;
-			*height = (style->font->height > *height) ? style->font->height : *height;
-		}
-	}
-}
-
