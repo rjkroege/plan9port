@@ -80,13 +80,16 @@ int INSERT_LOGGING = 1;
 	f. draw multiple lines of different height of attributed string.
 		- it works. sort of
 		- we need to correct the baselines.
-
---> HERE <--
 	g. make a frame
 	h. get unattributed text working in the frame
 	i. get attributed text client side coded
 	j. get 
 */
+
+void
+setoffsetstagsforrunerange(STag *styletags, STag style, int lr) {
+	setstagsforrunerange(styletags, style + ' ', lr);
+}
 
 
 // --------------- local model -----------------------
@@ -222,27 +225,23 @@ threadmain(volatile int argc, char **volatile argv)
 	
 	tagstringlen = strlen(codestring);
 	tagstring = mallocz(tagstringlen, 1);
-
+	memset(tagstring, ' ', tagstringlen);         
 
 	// setup
-	setstagsforrunerange(tagstring + 5, KEYWORD, 8);
-	setstagsforrunerange(tagstring + 24, KEYWORD, 4);
-	setstagsforrunerange(tagstring + 31, KEYWORD,  8);
-	setstagsforrunerange(tagstring + 14, KEYWORD, 3);
-	setstagsforrunerange(tagstring + 46, COMMENT, 9);
-	setstagsforrunerange(tagstring + 0, BOLD, 4);
+	setoffsetstagsforrunerange(tagstring + 5, KEYWORD, 8);
+	setoffsetstagsforrunerange(tagstring + 24, KEYWORD, 4);
+	setoffsetstagsforrunerange(tagstring + 31, KEYWORD,  8);
+	setoffsetstagsforrunerange(tagstring + 14, KEYWORD, 3);
+	setoffsetstagsforrunerange(tagstring + 46, COMMENT, 9);
+	setoffsetstagsforrunerange(tagstring + 0, BOLD, 4);
 	print("last style: %d\n", styledefns[KEYWORD].font);
 
 	// Japanese styling
 	rs3_len = runestrlen(rs3);
 	rs3_tags = mallocz(tagstringlen, 1);
-	print("last style: %d\n", styledefns[KEYWORD].font);
-
-	// Japanese styling
-	rs3_len = runestrlen(rs3);
-	rs3_tags = mallocz(tagstringlen, 1);
-	setstagsforrunerange(rs3_tags + 4, BOLD, 4);
-	setstagsforrunerange(rs3_tags + 14, BOLD, 4);
+	memset(rs3_tags, ' ', rs3_len);         
+	setoffsetstagsforrunerange(rs3_tags + 4, BOLD, 4);
+	setoffsetstagsforrunerange(rs3_tags + 14, BOLD, 4);
 	print("last style: %d\n", styledefns[KEYWORD].font);
 	
 	// need colors
@@ -264,6 +263,7 @@ threadmain(volatile int argc, char **volatile argv)
 	sframe.point = 0;
 	sframe.maxr = 100;
 	sframe.tagstring = mallocz(sizeof(char) * sframe.maxr, 1);
+	memset(sframe.tagstring,  ' ', sizeof(char) * sframe.maxr);
 	sframe.larger_buffer = mallocz(sizeof(Rune) * sframe.maxr, 1);
 
 	// Run unit tests on Frame.
@@ -455,6 +455,7 @@ reFontify(StyleFrame* sframe)
 	}
 
 	original = (STag*)malloc(sizeof(STag) * sframe->lastr);
+	memset(original, ' ', sizeof(STag) * sframe->lastr);
 	memcpy(original, sframe->tagstring, sizeof(STag) * sframe->lastr);
 	
 	boringFontifyBufferTest(sframe);	/* Actually fontify */
@@ -482,7 +483,7 @@ print("insertCharacter start\n");
 		print("resizing the buffer\n");
 		sframe->larger_buffer = realloc(sframe->larger_buffer, sizeof(Rune) * sframe->maxr * 2);
 		sframe->tagstring = realloc(sframe->tagstring, sizeof(char) * sframe->maxr * 2);
-		setstagsforrunerange(sframe->tagstring, DEFAULTSTYLE, sframe->maxr * 2);
+		setoffsetstagsforrunerange(sframe->tagstring, DEFAULTSTYLE, sframe->maxr * 2);
 		sframe->maxr *= 2;
 	}
 
@@ -702,15 +703,18 @@ enum {
 	fSEP
 };
 
-// This routine is useful. I might want to preserve it for posterity.
+/*
+ * Now that style strings are over printables, this is easy.
+*/
 void
 dumpTheStyleString(StyleFrame *sframe, int s, int e)
 {
 	int i;
+	print("%.*s", e - s, sframe->tagstring + s);
 	
-	for (i = s;  i < e; i++) {
-		print("%c%c", " !@"[sframe->tagstring[i]], sframe->larger_buffer[i]);
-	}				
+//	for (i = s;  i < e; i++) {
+//		print("%c%c", " !@"[sframe->tagstring[i]], sframe->larger_buffer[i]);
+//	}				
 }
 
 // FIXME: re-write this to do two things:
@@ -736,7 +740,7 @@ boringFontifyBufferTest(StyleFrame* sframe) {
 	int state = fDEF, i, o;
 	Rune r;
 	
-	setstagsforrunerange(sframe->tagstring, DEFAULTSTYLE, sframe->lastr);
+	setoffsetstagsforrunerange(sframe->tagstring, DEFAULTSTYLE, sframe->lastr);
 	for (i = 0, o = 0 ; i <	sframe->lastr; i++) {
 		r = sframe->larger_buffer[i];		
 		switch (state) {
@@ -745,12 +749,12 @@ boringFontifyBufferTest(StyleFrame* sframe) {
 				state = fDEF;
 			else if (r == '/' && i + 1 < sframe->lastr && sframe->larger_buffer[i+1] == '/')
 				state = fCOMMENT;
-			setstagsforrunerange(sframe->tagstring + o, BOLD, i - o);
+			setoffsetstagsforrunerange(sframe->tagstring + o, BOLD, i - o);
 			o = i;
 			break;
 		case fDEF:
 			if (r == '/' && i + 1 < sframe->lastr && sframe->larger_buffer[i+1] == '/') {
-				setstagsforrunerange(sframe->tagstring + o, DEFAULTSTYLE, i - o);
+				setoffsetstagsforrunerange(sframe->tagstring + o, DEFAULTSTYLE, i - o);
 				state = fCOMMENT;
 				o = i;
 			} else if (r == '*') {
@@ -761,7 +765,7 @@ boringFontifyBufferTest(StyleFrame* sframe) {
 		case fCOMMENT:
 			if (r == '\n') {
 				print("end of a comment\n");
-				setstagsforrunerange(sframe->tagstring + o, COMMENT, i - o);
+				setoffsetstagsforrunerange(sframe->tagstring + o, COMMENT, i - o);
 				o = i + 1;
 				state = fDEF;
 			}
@@ -772,13 +776,13 @@ boringFontifyBufferTest(StyleFrame* sframe) {
 	// clean up
 	switch (state) {
 	case fSTART:
-		setstagsforrunerange(sframe->tagstring + o, BOLD, i - o);
+		setoffsetstagsforrunerange(sframe->tagstring + o, BOLD, i - o);
 		break;
 	case fDEF:
-		setstagsforrunerange(sframe->tagstring + o, DEFAULTSTYLE, i - o);
+		setoffsetstagsforrunerange(sframe->tagstring + o, DEFAULTSTYLE, i - o);
 		break;
 	case fCOMMENT:
-		setstagsforrunerange(sframe->tagstring + o, COMMENT, i - o);
+		setoffsetstagsforrunerange(sframe->tagstring + o, COMMENT, i - o);
 		break;
 	}		
 }

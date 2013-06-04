@@ -82,7 +82,7 @@ _ystringnwidth(Rune* r, char *s,  int len, STag* st, Style* styledefns, int* asc
 	int asc = 0, o, w;
 	Rune rw;
 	Style *style;
-	STag def = 0;
+	STag def = ' ';
 
 	o = (st) ? 1 : 0;
 	st = (st) ? st : &def;
@@ -93,7 +93,8 @@ _ystringnwidth(Rune* r, char *s,  int len, STag* st, Style* styledefns, int* asc
 		else
 			w = chartorune(&rw, (char*)s);
 
-		style = styledefns + *st;
+		assert(*st >= ' ');
+		style = styledefns + *st - ' ';
 		asc = (style->font->ascent > asc) ? style->font->ascent : asc;
 		pt.y = (style->font->height > pt.y) ? style->font->height : pt.y;
 		pt.x += _stringnwidth(style->font, s, r, 1);

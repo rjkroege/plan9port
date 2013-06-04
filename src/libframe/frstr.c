@@ -48,6 +48,7 @@ _fralloctags(Frame* f, unsigned n)
 {
 	STag* s;
 	s = (STag*)malloc(sizeof(STag) * ROUNDUP(n));
+	memset(s, ' ', sizeof(STag) * ROUNDUP(n));
 	if (s == 0)
 		drawerror(f->display, "out of memory");
 	return s;
