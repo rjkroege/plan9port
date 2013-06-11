@@ -44,13 +44,13 @@ bxscan(Frame *f, Rune *sp, Rune *ep, Point *ppt, STag* sstp)
 		if(c=='\t' || c=='\n'){
 			b->bc = c;
 			b->wid = 5000;
-			b->minwid = (c=='\n')? 0 : stringwidth(frame.styles[*sstp].font, " ");
+			b->minwid = (c=='\n')? 0 : ystringwidth(frame.styles, " ", sstp);
 			b->nrune = -1;
 			if(c=='\n')
 				nl++;
 			frame.nchars++;
 			sp++;
-			sstp++;
+			sstp += sstp ? 1 : 0;;
 		}else{
 			s = tmp;
 			tagstartp = sstp;
