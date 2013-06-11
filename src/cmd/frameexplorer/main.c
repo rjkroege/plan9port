@@ -267,7 +267,7 @@ threadmain(volatile int argc, char **volatile argv)
 	sframe.larger_buffer = mallocz(sizeof(Rune) * sframe.maxr, 1);
 
 	// Run unit tests on Frame.
-	runAllTests(&sframe.frame);
+	runAllTests();
 	print("after runAllTests\n");
 
 	// cribbed from acme

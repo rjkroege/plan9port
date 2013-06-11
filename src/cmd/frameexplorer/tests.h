@@ -4,6 +4,6 @@
 extern "C" { 
 #endif
 
-void runAllTests(Frame*);
+void runAllTests();
 
 #endif // _TESTS_H_
