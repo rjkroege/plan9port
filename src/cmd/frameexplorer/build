@@ -10,6 +10,8 @@ rm $PLAN9/lib/libdraw.a $PLAN9/lib/libframe.a
     mk clean &&\
     mk &&\
     cd .  &&\
-    ./o.frameexplorer
+	./o.frameexplorer	
+
+#    valgrind --leak-check'='yes  ./o.frameexplorer
 
 
