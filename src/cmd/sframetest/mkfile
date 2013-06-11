@@ -1,0 +1,15 @@
+<$PLAN9/src/mkhdr
+
+TARG=sframetest
+
+OFILES=\
+	main.$O \
+	test_draw.$O \
+	test_sdraw.$O \
+	test_utils.$O
+
+HFILES=tests.h
+
+<$PLAN9/src/mkone
+
+# edit.$O ecmd.$O elog.$O:	edit.h
