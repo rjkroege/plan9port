@@ -16,3 +16,4 @@ rm $PLAN9/lib/libdraw.a $PLAN9/lib/libframe.a
     ./o.acme
 
 
+# valgrind --leak-check'='yes    ./o.acme
