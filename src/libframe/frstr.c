@@ -7,6 +7,7 @@
 #define	CHUNK	16
 #define	ROUNDUP(n)	((n+CHUNK)&~(CHUNK-1))
 
+// TODO(rjk): Should be uchar * per original
 Rune *
 _frallocstr(Frame *f, unsigned n)
 {

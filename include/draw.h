@@ -343,6 +343,7 @@ struct Font
 struct Style
 {
 	Font 		*font;	/* the font for this style. */
+	// TODO(rjk): should come out of here. Background color works as before.
 	Image* 	bg;		/* the background color */
 	Point		bgp;		/* the background color point */
 	Image* 	src;		/* the foreground color */
@@ -491,6 +492,7 @@ extern void	borderop(Image*, Rectangle, int, Image*, Point, Drawop);
 
 /*
  * Styled Strings. Work only with Runes.
+ * TODO(rjk): need to revert this presumption.
  */
 extern void 	setstagsforrunerange(STag*, STag, int);
 // FIXME: pending removal.

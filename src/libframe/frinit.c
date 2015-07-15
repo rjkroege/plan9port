@@ -144,6 +144,7 @@ frsinit(Frame *f, Rectangle r, Style* sdefns, int sc, Image *b, Image *cols[NCOL
 	f->msc = (sc > NSTYLE) ?  NSTYLE: sc ;
 	f->styles = sdefns;
 	
+	// TODO(rjk): note need to do something better with background color
 	// Colour fallback
 	for (; sc > 0; sc--, sdefns++) {
 		// If back is 0, we paint on the existing background

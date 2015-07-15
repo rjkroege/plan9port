@@ -38,6 +38,7 @@ runestring(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r)
 }
 
 // Styled
+// TODO(rjk): I should support all of the base entry points.
 Point
 srunestring(Image *dst, Point pt, Rune *r, STag *styletags, Style *styledefns, int ascent)
 {
@@ -69,6 +70,13 @@ runestringnop(Image *dst, Point pt, Image *src, Point sp, Font *f, Rune *r, int 
 }
 
 // Styled. On runes only.
+// TODO(rjk): note that ascent is the line height.
+// TODO(rjk): I should support drawing with utf8 too per the original
+// API.
+// TODO(rjk): must change how background colors work. In particular,
+// I want to excise support for backgrounds that vary with each character.
+// so that the API is more like the original. Moreover, I can fix up little
+// dropped pixel turds by filling rectangles with the background colour?
 // FIXME: may need to do something clever about painting the backgrounds.
 // FIXME: might have to do something about heights.
 Point
