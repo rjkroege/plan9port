@@ -301,8 +301,10 @@ char **mkenv(){
 				nchr+=strlen(a->word)+1;
 		}
 		if(v->fn){
-			nvar++;
+			// One for $PLAN9 rc, one for /usr/local rc.
+			nvar+=2;
 			nchr+=strlen(v->name)+strlen(v->fn[v->pc-1].s)+8;
+			nchr+=strlen(v->name)+strlen(v->fn[v->pc-1].s)+7;
 		}
 	}
 	env=(char **)emalloc((nvar+1)*sizeof(char *)+nchr);
@@ -331,6 +333,7 @@ char **mkenv(){
 			while(*q) *p++=*q++;
 			*p++=' ';
 #endif
+			// Export for $PLAN9 rc
 			*p++='f'; *p++='n'; *p++='#';
 			q=v->name;
 			while(*q) *p++=*q++;
@@ -338,6 +341,16 @@ char **mkenv(){
 			q=v->fn[v->pc-1].s;
 			while(*q) *p++=*q++;
 			*p++='\n';
+			*p++='\0';
+
+			// Export for /usr/local rc
+			*ep++=p;
+			*p++='f'; *p++='n'; *p++='_';
+			q=v->name;
+			while(*q) *p++=*q++;
+			*p++='=';
+			q=v->fn[v->pc-1].s;
+			while(*q) *p++=*q++;
 			*p++='\0';
 		}
 	}
