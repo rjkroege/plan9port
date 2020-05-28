@@ -5,7 +5,8 @@
 #include <sys/wait.h>
 #include <sched.h>
 #include <signal.h>
-#if !defined(__OpenBSD__)
+#if (defined(__linux__) && defined(__GLIBC__)) && !defined(__OpenBSD__)
+	/* Leave out ucontext.h on musl */
 #	if defined(__APPLE__)
 #		define _XOPEN_SOURCE 	/* for Snow Leopard */
 #	endif
@@ -40,7 +41,25 @@
 #	endif
 #endif
 
+#if defined(__linux__) && !defined(__GLIBC__)
+	/* Musl */
+#	define mcontext libthread_mcontext
+#	define mcontext_t libthread_mcontext_t
+#	define ucontext libthread_ucontext
+#	define ucontext_t libthread_ucontext_t
+#	if defined __i386__
+#		include "386-ucontext.h"
+#	elif defined __amd64__
+#		include "x86_64-ucontext.h"
+#	else
+#		include "power-ucontext.h"
+#	endif
+extern pid_t rfork_thread(int, void*, int(*)(void*), void*);
+#endif
+
+
 #if defined(__OpenBSD__)
+	/* Linux is included here for musl */
 #	define mcontext libthread_mcontext
 #	define mcontext_t libthread_mcontext_t
 #	define ucontext libthread_ucontext

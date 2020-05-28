@@ -9,6 +9,10 @@ NetBSD)
 OpenBSD)
 	echo pthread.o stkmmap.o
 	;;
+Linux)
+	# Hackery for musl
+	echo pthread.o stkmmap.o ${SYSNAME}-${OBJTYPE}-asm.o ${OBJTYPE}-ucontext.o
+	;;
 *)
 	echo pthread.o stkmalloc.o
 esac
