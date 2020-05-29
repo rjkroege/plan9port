@@ -60,10 +60,22 @@ DragonFly|*BSD)
 	echo "CFLAGS='-pthread'" >> $PLAN9/config
 	awk=awk
 	;;
+Linux)
+	if [ -e /etc/alpine-release ]; then
+		# Force static linking with musl on Alpine
+		# TODO(rjk): There needs to be a better way to do this.
+		echo "LDFLAGS=-static" >> $PLAN9/config
+		echo "CC9FLAGS=-static" >> $PLAN9/config
+		echo "CC9=clang" >> $PLAN9/config
+	fi
+	awk=awk
+	;;
 *)
 	awk=awk
 	;;
 esac
+
+
 
 (
 if [ `uname` = SunOS ]; then

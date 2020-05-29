@@ -5,7 +5,7 @@ libsl=""
 frameworks=""
 doautolib=true
 doautoframework=true
-verbose=false
+verbose=true
 
 nmflags=""
 extralibs="-lm"
