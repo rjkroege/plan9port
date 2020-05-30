@@ -42,6 +42,10 @@ Linux-sparc64-context.$O: Linux-sparc64-context.S
 sparc64-ucontext.$O: sparc64-ucontext.c
 	$CC -m64 -mcpu=v9 $CFLAGS sparc64-ucontext.c
 
+# Musl specific.
+Linux-x86_64-asm.$O: Linux-x86_64-asm.S
+	$CC $CFLAGS Linux-x86_64-asm.S
+
 test:V: tprimes tspawn
 	primes 1 10007 >p1.txt
 	$PLAN9/bin/time ./tprimes 10000 >tp1.txt
